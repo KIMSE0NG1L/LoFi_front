@@ -1,0 +1,26 @@
+name: lofi_frontend
+description: "옛다 띱! - 분실물 퀴즈 매칭 서비스"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  go_router: ^14.6.3
+  provider: ^6.1.2
+  shared_preferences: ^2.3.5
+  cached_network_image: ^3.4.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

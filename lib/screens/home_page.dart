@@ -1,0 +1,338 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../theme/app_theme.dart';
+import '../providers/auth_provider.dart';
+import '../data/mock_data.dart';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final Map<String, int> _animatedValues = {'registered': 0, 'matched': 0, 'rate': 0};
+  final Map<String, int> _targets = {'registered': 156, 'matched': 89, 'rate': 57};
+
+  @override
+  void initState() {
+    super.initState();
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    for (final key in _targets.keys) {
+      _animateValue(key, _targets[key]!);
+    }
+  }
+
+  void _animateValue(String key, int target) async {
+    final steps = 40;
+    for (int i = 1; i <= steps; i++) {
+      await Future.delayed(const Duration(milliseconds: 30));
+      if (mounted) {
+        setState(() {
+          _animatedValues[key] = ((target / steps) * i).floor().clamp(0, target);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        automaticallyImplyLeading: false,
+        title: const Text('옛다 띱!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: -0.3)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero
+            Container(
+              color: AppColors.primary,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (auth.isLoggedIn) ...[
+                    const Text('Welcome back', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text('${auth.user!.name}님 👋', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                  ] else ...[
+                    const Text('퀴즈로 찾는', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    const Text('분실물 매칭 서비스 🎯', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                  ],
+                  const SizedBox(height: 20),
+                  // Stats
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        _statCell(_animatedValues['registered'].toString(), '건', '등록됨'),
+                        _divider(),
+                        _statCell(_animatedValues['matched'].toString(), '건', '매칭됨'),
+                        _divider(),
+                        _statCell(_animatedValues['rate'].toString(), '%', '성공률'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Action cards
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => context.push('/lost-items'),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.black.withOpacity(0.05)),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44, height: 44,
+                              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)),
+                              child: const Icon(Icons.search_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text('분실물\n찾기', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 15, height: 1.3)),
+                            const SizedBox(height: 6),
+                            const Text('퀴즈 풀고\n내 물건 찾기', style: TextStyle(color: AppColors.textLight, fontSize: 11, height: 1.5)),
+                            const SizedBox(height: 14),
+                            Row(children: const [
+                              Text('바로가기', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w500)),
+                              SizedBox(width: 2),
+                              Icon(Icons.arrow_forward, size: 12, color: AppColors.textMuted),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => context.push('/register-found'),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44, height: 44,
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                              child: const Icon(Icons.upload_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text('습득물\n등록', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15, height: 1.3)),
+                            const SizedBox(height: 6),
+                            Text('주운 물건\n주인 찾아주기', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, height: 1.5)),
+                            const SizedBox(height: 14),
+                            Row(children: [
+                              Text('등록하기', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w500)),
+                              const SizedBox(width: 2),
+                              Icon(Icons.arrow_forward, size: 12, color: Colors.white.withOpacity(0.4)),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Feature grid
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                children: [
+                  _featureCell(Icons.map_outlined, '지도', '/map'),
+                  _featureCell(Icons.chat_bubble_outline_rounded, '채팅', '/chats'),
+                  _featureCell(Icons.shopping_bag_outlined, '상점', '/shop'),
+                  _featureCell(Icons.warning_amber_rounded, '신고', '/register-lost'),
+                ],
+              ),
+            ),
+            // Tip
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(color: AppColors.subtle, borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('오늘의 팁', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.primary)),
+                          SizedBox(height: 2),
+                          Text('물건 특징을 세밀하게 입력할수록 매칭 성공률이 올라가요!', style: TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.5)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Recent activity
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('최근 활동', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.primary)),
+                  GestureDetector(
+                    onTap: () => context.push('/ranking'),
+                    child: const Row(
+                      children: [
+                        Text('전체보기', style: TextStyle(color: AppColors.textLight, fontSize: 12)),
+                        Icon(Icons.arrow_forward, size: 14, color: AppColors.textLight),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withOpacity(0.05)),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)],
+                ),
+                child: Column(
+                  children: List.generate(recentActivity.length, (i) {
+                    final item = recentActivity[i];
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border(bottom: i < recentActivity.length - 1 ? BorderSide(color: Colors.black.withOpacity(0.04)) : BorderSide.none),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                            child: Center(child: Text(item['icon'] as String, style: const TextStyle(fontSize: 16))),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item['text'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary), overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 2),
+                                Row(children: [
+                                  const Icon(Icons.access_time, size: 10, color: AppColors.textFaint),
+                                  const SizedBox(width: 3),
+                                  Text(item['time'] as String, style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
+                                ]),
+                              ],
+                            ),
+                          ),
+                          if (item['type'] == 'match')
+                            Icon(Icons.check_circle_outline, size: 15, color: Colors.black.withOpacity(0.3)),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCell(String value, String unit, String label) {
+    return Expanded(
+      child: Container(
+        color: AppColors.primary,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                Text(unit, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(label, style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _divider() => Container(width: 1, height: 60, color: Colors.white.withOpacity(0.06));
+
+  Widget _featureCell(IconData icon, String label, String path) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => context.push(path),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(color: AppColors.subtle, borderRadius: BorderRadius.circular(14)),
+          child: Column(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 22),
+              const SizedBox(height: 6),
+              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primary)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
