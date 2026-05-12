@@ -78,7 +78,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final slide = _slides[_current];
     final isLast = _current == _slides.length - 1;
 
-    return AnimatedContainer(
+    return Material(
+      color: Colors.transparent,
+      child: AnimatedContainer(
       duration: const Duration(milliseconds: 500),
       color: slide.bg,
       child: SafeArea(
@@ -176,6 +178,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

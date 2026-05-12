@@ -23,52 +23,64 @@ import 'widgets/bottom_nav.dart';
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
-final _router = GoRouter(
-  navigatorKey: _rootKey,
-  initialLocation: '/',
-  routes: [
-    // Onboarding (full screen, no nav)
-    GoRoute(
-      path: '/onboarding',
-      builder: (ctx, state) => const OnboardingScreen(),
-    ),
-    // Main shell with bottom nav
-    ShellRoute(
-      navigatorKey: _shellKey,
-      builder: (ctx, state, child) {
-        final location = state.uri.toString();
-        final noNavPaths = ['/login', '/signup', '/profile', '/account-settings', '/chat/'];
-        final hideNav = noNavPaths.any((p) => location.startsWith(p));
-        return Scaffold(
-          body: child,
-          bottomNavigationBar: hideNav ? null : const BottomNav(),
-        );
-      },
+GoRouter _buildRouter(bool onboardingDone) => GoRouter(
+      navigatorKey: _rootKey,
+      initialLocation: onboardingDone ? '/' : '/onboarding',
       routes: [
-        GoRoute(path: '/', builder: (ctx, state) => const HomePage()),
-        GoRoute(path: '/lost-items', builder: (ctx, state) => const LostItemsPage()),
-        GoRoute(path: '/register-found', builder: (ctx, state) => const RegisterFoundPage()),
-        GoRoute(path: '/register-lost', builder: (ctx, state) => const RegisterLostPage()),
-        GoRoute(path: '/ranking', builder: (ctx, state) => const RankingPage()),
-        GoRoute(path: '/login', builder: (ctx, state) => const LoginPage()),
-        GoRoute(path: '/signup', builder: (ctx, state) => const SignupPage()),
-        GoRoute(path: '/profile', builder: (ctx, state) => const ProfilePage()),
-        GoRoute(path: '/account-settings', builder: (ctx, state) => const AccountSettingsPage()),
-        GoRoute(path: '/chats', builder: (ctx, state) => const ChatListPage()),
         GoRoute(
-          path: '/chat/:id',
-          builder: (ctx, state) => ChatPage(chatId: state.pathParameters['id']!),
+          path: '/onboarding',
+          builder: (ctx, state) => const OnboardingScreen(),
         ),
-        GoRoute(path: '/map', builder: (ctx, state) => const MapPage()),
-        GoRoute(path: '/favorites', builder: (ctx, state) => const FavoritesPage()),
-        GoRoute(path: '/shop', builder: (ctx, state) => const ShopPage()),
+        ShellRoute(
+          navigatorKey: _shellKey,
+          builder: (ctx, state, child) {
+            final location = state.uri.toString();
+            final noNavPaths = ['/login', '/signup', '/profile', '/account-settings', '/chat/'];
+            final hideNav = noNavPaths.any((p) => location.startsWith(p));
+            return Scaffold(
+              body: child,
+              bottomNavigationBar: hideNav ? null : const BottomNav(),
+            );
+          },
+          routes: [
+            GoRoute(path: '/', builder: (ctx, state) => const HomePage()),
+            GoRoute(path: '/lost-items', builder: (ctx, state) => const LostItemsPage()),
+            GoRoute(path: '/register-found', builder: (ctx, state) => const RegisterFoundPage()),
+            GoRoute(path: '/register-lost', builder: (ctx, state) => const RegisterLostPage()),
+            GoRoute(path: '/ranking', builder: (ctx, state) => const RankingPage()),
+            GoRoute(path: '/login', builder: (ctx, state) => const LoginPage()),
+            GoRoute(path: '/signup', builder: (ctx, state) => const SignupPage()),
+            GoRoute(path: '/profile', builder: (ctx, state) => const ProfilePage()),
+            GoRoute(path: '/account-settings', builder: (ctx, state) => const AccountSettingsPage()),
+            GoRoute(path: '/chats', builder: (ctx, state) => const ChatListPage()),
+            GoRoute(
+              path: '/chat/:id',
+              builder: (ctx, state) => ChatPage(chatId: state.pathParameters['id']!),
+            ),
+            GoRoute(path: '/map', builder: (ctx, state) => const MapPage()),
+            GoRoute(path: '/favorites', builder: (ctx, state) => const FavoritesPage()),
+            GoRoute(path: '/shop', builder: (ctx, state) => const ShopPage()),
+          ],
+        ),
       ],
-    ),
-  ],
-);
+    );
 
-class App extends StatelessWidget {
-  const App({super.key});
+class App extends StatefulWidget {
+  final bool onboardingDone;
+  const App({super.key, this.onboardingDone = true});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = _buildRouter(widget.onboardingDone);
+  }
 
   @override
   Widget build(BuildContext context) {
