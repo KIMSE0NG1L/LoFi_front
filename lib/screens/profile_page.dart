@@ -89,9 +89,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: () {
                             if (Navigator.of(context).canPop()) {
                               Navigator.of(context).pop();
-                              }
-                              },
-                              padding: EdgeInsets.zero,
+                            } else {
+                              context.go('/');
+                            }
+                          },
+                          padding: EdgeInsets.zero,
                         ),
                         GestureDetector(
                           onTap: () { auth.logout(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그아웃 되었습니다'))); context.go('/'); },
