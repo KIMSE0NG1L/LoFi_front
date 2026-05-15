@@ -86,8 +86,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => Navigator.of(context).pop(),
-                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                              }
+                              },
+                              padding: EdgeInsets.zero,
                         ),
                         GestureDetector(
                           onTap: () { auth.logout(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그아웃 되었습니다'))); context.go('/'); },
