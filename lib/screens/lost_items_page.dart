@@ -239,12 +239,12 @@ class _LostItemsPageState extends State<LostItemsPage> {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.only(bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('퀴즈 풀고 찾기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12, letterSpacing: 0.5)),
-                  SizedBox(width: 6),
-                  Text('🎯', style: TextStyle(fontSize: 12)),
+                  const Text('퀴즈 풀고 찾기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12, letterSpacing: 0.5)),
+                  const SizedBox(width: 6),
+                  Image.asset('assets/app_logo_T_white_N.png', width: 20, height: 20),
                 ],
               ),
             ),

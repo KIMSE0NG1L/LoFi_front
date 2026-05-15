@@ -15,8 +15,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<_SlideData> _slides = [
     _SlideData(
-      emoji: '🎯',
-      title: '옛다 띱!',
+      imageAsset: 'assets/app_logo_T_white_N.png',
+      title: '구해조!',
       subtitle: '분실물 퀴즈 매칭 서비스',
       description: '잃어버린 물건을 찾고,\n선행을 게임처럼 즐기세요.',
       bg: const Color(0xFF0D0D0D),
@@ -67,7 +67,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     if (_current < _slides.length - 1) {
-      _controller.nextPage(duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
     } else {
       _done();
     }
@@ -81,104 +84,136 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Material(
       color: Colors.transparent,
       child: AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      color: slide.bg,
-      child: SafeArea(
-        child: Stack(
-          children: [
-            // Skip button
-            if (!isLast)
-              Positioned(
-                top: 12,
-                right: 16,
-                child: GestureDetector(
-                  onTap: _done,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: slide.textColor == Colors.white ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.07),
-                      borderRadius: BorderRadius.circular(20),
+        duration: const Duration(milliseconds: 500),
+        color: slide.bg,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Skip button
+              if (!isLast)
+                Positioned(
+                  top: 12,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: _done,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: slide.textColor == Colors.white
+                            ? Colors.white.withOpacity(0.12)
+                            : Colors.black.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '건너뛰기',
+                        style: TextStyle(
+                          color: slide.textColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    child: Text('건너뛰기', style: TextStyle(color: slide.textColor, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ),
-              ),
-            Column(
-              children: [
-                // Slides
-                Expanded(
-                  child: PageView.builder(
-                    controller: _controller,
-                    onPageChanged: (i) => setState(() => _current = i),
-                    itemCount: _slides.length,
-                    itemBuilder: (ctx, i) => _buildSlide(_slides[i]),
+              Column(
+                children: [
+                  // Slides
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _controller,
+                      onPageChanged: (i) => setState(() => _current = i),
+                      itemCount: _slides.length,
+                      itemBuilder: (ctx, i) => _buildSlide(_slides[i]),
+                    ),
                   ),
-                ),
-                // Bottom controls
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                  child: Column(
-                    children: [
-                      // Dots
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_slides.length, (i) {
-                          final active = i == _current;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: active ? 24 : 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? (slide.textColor == Colors.white ? const Color(0xFFF5C842) : const Color(0xFF0D0D0D))
-                                  : (slide.textColor == Colors.white ? Colors.white.withOpacity(0.25) : Colors.black.withOpacity(0.15)),
-                              borderRadius: BorderRadius.circular(4),
+                  // Bottom controls
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                    child: Column(
+                      children: [
+                        // Dots
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(_slides.length, (i) {
+                            final active = i == _current;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: active ? 24 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? (slide.textColor == Colors.white
+                                          ? const Color(0xFFF5C842)
+                                          : const Color(0xFF0D0D0D))
+                                    : (slide.textColor == Colors.white
+                                          ? Colors.white.withOpacity(0.25)
+                                          : Colors.black.withOpacity(0.15)),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 24),
+                        // CTA
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _next,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: slide.textColor == Colors.white
+                                  ? const Color(0xFFF5C842)
+                                  : const Color(0xFF0D0D0D),
+                              foregroundColor: slide.textColor == Colors.white
+                                  ? const Color(0xFF0D0D0D)
+                                  : Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              elevation: 0,
                             ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 24),
-                      // CTA
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _next,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: slide.textColor == Colors.white ? const Color(0xFFF5C842) : const Color(0xFF0D0D0D),
-                            foregroundColor: slide.textColor == Colors.white ? const Color(0xFF0D0D0D) : Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(isLast ? '시작하기' : '다음', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              const SizedBox(width: 6),
-                              const Icon(Icons.chevron_right, size: 20),
-                            ],
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isLast ? '시작하기' : '다음',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.chevron_right, size: 20),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      if (isLast) ...[
-                        const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: _done,
-                          child: Text(
-                            '이미 계정이 있어요',
-                            style: const TextStyle(color: Color(0xFF8A8880), fontSize: 14, fontWeight: FontWeight.w500),
+                        if (isLast) ...[
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: _done,
+                            child: Text(
+                              '이미 계정이 있어요',
+                              style: const TextStyle(
+                                color: Color(0xFF8A8880),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -190,20 +225,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Icon
-          if (slide.emoji != null)
+          if (slide.imageAsset != null)
             Container(
-              width: 96, height: 96,
+              width: 163,
+              height: 163,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Center(
+                child: Image.asset(slide.imageAsset!, width: 109, height: 109),
+              ),
+            )
+          else if (slide.emoji != null)
+            Container(
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Center(child: Text(slide.emoji!, style: const TextStyle(fontSize: 44))),
+              child: Center(
+                child: Text(slide.emoji!, style: const TextStyle(fontSize: 44)),
+              ),
             )
           else if (slide.icon != null)
             Container(
-              width: 80, height: 80,
-              decoration: BoxDecoration(color: slide.iconBg, borderRadius: BorderRadius.circular(24)),
-              child: Center(child: Text(slide.icon!, style: const TextStyle(fontSize: 36))),
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: slide.iconBg,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Center(
+                child: Text(slide.icon!, style: const TextStyle(fontSize: 36)),
+              ),
             ),
           const SizedBox(height: 32),
           // Badge
@@ -216,7 +272,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Text(
               slide.subtitle,
               style: TextStyle(
-                color: slide.accentColor == const Color(0xFF0D0D0D) ? slide.accentColor : slide.accentColor,
+                color: slide.accentColor == const Color(0xFF0D0D0D)
+                    ? slide.accentColor
+                    : slide.accentColor,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
@@ -240,7 +298,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             slide.description,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: slide.textColor == Colors.white ? Colors.white.withOpacity(0.55) : const Color(0xFF8A8880),
+              color: slide.textColor == Colors.white
+                  ? Colors.white.withOpacity(0.55)
+                  : const Color(0xFF8A8880),
               fontSize: 15,
               height: 1.6,
             ),
@@ -253,6 +313,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class _SlideData {
   final String? emoji;
+  final String? imageAsset;
   final String title;
   final String subtitle;
   final String description;
@@ -264,6 +325,7 @@ class _SlideData {
 
   const _SlideData({
     this.emoji,
+    this.imageAsset,
     required this.title,
     required this.subtitle,
     required this.description,

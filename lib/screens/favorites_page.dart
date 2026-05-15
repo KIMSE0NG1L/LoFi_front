@@ -84,10 +84,10 @@ class FavoritesPage extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: const BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18))),
-                          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                             Text('퀴즈 풀고 찾기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
                             SizedBox(width: 6),
-                            Text('🎯', style: TextStyle(fontSize: 12)),
+                            Image.asset('assets/app_logo_T_white_N.png', width: 20, height: 20),
                           ]),
                         ),
                       ],
