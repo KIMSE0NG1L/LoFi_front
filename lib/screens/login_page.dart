@@ -21,12 +21,16 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     if (_emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요')));
       return;
     }
     final name = _emailCtrl.text.split('@')[0];
     context.read<AuthProvider>().login(_emailCtrl.text, name: name);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그인 되었습니다! 🎉')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('로그인 되었습니다! 🎉')));
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) context.go('/');
     });
@@ -34,7 +38,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _sendReset() {
     if (_resetEmailCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이메일을 입력해주세요')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이메일을 입력해주세요')));
       return;
     }
     setState(() => _resetSent = true);
@@ -53,14 +59,32 @@ class _LoginPageState extends State<LoginPage> {
                 Container(
                   color: AppColors.primary,
                   width: double.infinity,
-                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 40, bottom: 40),
-                  child: const Column(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 40,
+                    bottom: 40,
+                  ),
+                  child: Column(
                     children: [
-                      Text('🎯', style: TextStyle(fontSize: 44)),
+                      Image.asset(
+                        'assets/app_logo_T_white_N.png',
+                        width: 75,
+                        height: 75,
+                      ),
                       SizedBox(height: 12),
-                      Text('옛다 띱!', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+                      Text(
+                        '구해조!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                       SizedBox(height: 6),
-                      Text('분실물 퀴즈 매칭 서비스', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                      Text(
+                        '분실물 퀴즈 매칭 서비스',
+                        style: TextStyle(color: Colors.white54, fontSize: 14),
+                      ),
                     ],
                   ),
                 ),
@@ -74,13 +98,27 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
-                        border: Border.all(color: Colors.black.withOpacity(0.05)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 20,
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.05),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('로그인', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                          const Text(
+                            '로그인',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
                           const SizedBox(height: 20),
                           _label('이메일'),
                           _inputField(
@@ -97,9 +135,15 @@ class _LoginPageState extends State<LoginPage> {
                             obscure: !_showPw,
                             prefixIcon: Icons.lock_outline,
                             suffixIcon: IconButton(
-                              icon: Icon(_showPw ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                  color: AppColors.textFaint, size: 18),
-                              onPressed: () => setState(() => _showPw = !_showPw),
+                              icon: Icon(
+                                _showPw
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textFaint,
+                                size: 18,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _showPw = !_showPw),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -110,13 +154,23 @@ class _LoginPageState extends State<LoginPage> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text('로그인', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  Text(
+                                    '로그인',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                                   SizedBox(width: 6),
                                   Icon(Icons.arrow_forward, size: 16),
                                 ],
@@ -129,12 +183,19 @@ class _LoginPageState extends State<LoginPage> {
                               onTap: () => context.push('/signup'),
                               child: RichText(
                                 text: const TextSpan(
-                                  style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 14,
+                                  ),
                                   children: [
                                     TextSpan(text: '계정이 없으신가요? '),
                                     TextSpan(
                                       text: '회원가입',
-                                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -144,16 +205,40 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 12),
                           Center(
                             child: GestureDetector(
-                              onTap: () => setState(() => _showResetModal = true),
-                              child: const Text('비밀번호를 잊으셨나요?', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+                              onTap: () =>
+                                  setState(() => _showResetModal = true),
+                              child: const Text(
+                                '비밀번호를 잊으셨나요?',
+                                style: TextStyle(
+                                  color: AppColors.textFaint,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),
                           Row(
                             children: [
-                              Expanded(child: Divider(color: Colors.black.withOpacity(0.06))),
-                              const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('또는', style: TextStyle(color: AppColors.textFaint, fontSize: 12))),
-                              Expanded(child: Divider(color: Colors.black.withOpacity(0.06))),
+                              Expanded(
+                                child: Divider(
+                                  color: Colors.black.withOpacity(0.06),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  '또는',
+                                  style: TextStyle(
+                                    color: AppColors.textFaint,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: Colors.black.withOpacity(0.06),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -162,11 +247,23 @@ class _LoginPageState extends State<LoginPage> {
                             child: OutlinedButton(
                               onPressed: () => context.go('/'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                side: BorderSide(color: Colors.black.withOpacity(0.1)),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                side: BorderSide(
+                                  color: Colors.black.withOpacity(0.1),
+                                ),
                               ),
-                              child: const Text('게스트로 둘러보기', style: TextStyle(color: AppColors.textDark, fontSize: 14)),
+                              child: const Text(
+                                '게스트로 둘러보기',
+                                style: TextStyle(
+                                  color: AppColors.textDark,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -185,7 +282,15 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _label(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(text, style: const TextStyle(color: AppColors.textDark, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.textDark,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    ),
   );
 
   Widget _inputField({
@@ -195,24 +300,32 @@ class _LoginPageState extends State<LoginPage> {
     TextInputType? keyboardType,
     required IconData prefixIcon,
     Widget? suffixIcon,
-  }) =>
-      TextField(
-        controller: controller,
-        obscureText: obscure,
-        keyboardType: keyboardType,
-        style: const TextStyle(fontSize: 14, color: AppColors.primary),
-        decoration: InputDecoration(
-          hintText: hint,
-          filled: true,
-          fillColor: AppColors.background,
-          prefixIcon: Icon(prefixIcon, color: AppColors.textFaint, size: 18),
-          suffixIcon: suffixIcon,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.06))),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.06))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.15))),
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        ),
-      );
+  }) => TextField(
+    controller: controller,
+    obscureText: obscure,
+    keyboardType: keyboardType,
+    style: const TextStyle(fontSize: 14, color: AppColors.primary),
+    decoration: InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.background,
+      prefixIcon: Icon(prefixIcon, color: AppColors.textFaint, size: 18),
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.15)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    ),
+  );
 
   Widget _buildResetModal() {
     return Container(
@@ -225,7 +338,9 @@ class _LoginPageState extends State<LoginPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30)],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -233,13 +348,32 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('비밀번호 재설정', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const Text(
+                      '비밀번호 재설정',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
                     GestureDetector(
-                      onTap: () => setState(() { _showResetModal = false; _resetSent = false; _resetEmailCtrl.clear(); }),
+                      onTap: () => setState(() {
+                        _showResetModal = false;
+                        _resetSent = false;
+                        _resetEmailCtrl.clear();
+                      }),
                       child: Container(
-                        width: 32, height: 32,
-                        decoration: BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
-                        child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
                   ],
@@ -248,32 +382,80 @@ class _LoginPageState extends State<LoginPage> {
                 if (_resetSent) ...[
                   const Text('📬', style: TextStyle(fontSize: 48)),
                   const SizedBox(height: 16),
-                  const Text('이메일을 확인해주세요!', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    '이메일을 확인해주세요!',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
-                  Text('${_resetEmailCtrl.text}로\n재설정 링크를 보냈습니다.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.5)),
+                  Text(
+                    '${_resetEmailCtrl.text}로\n재설정 링크를 보냈습니다.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => setState(() { _showResetModal = false; _resetSent = false; _resetEmailCtrl.clear(); }),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      onPressed: () => setState(() {
+                        _showResetModal = false;
+                        _resetSent = false;
+                        _resetEmailCtrl.clear();
+                      }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                       child: const Text('확인'),
                     ),
                   ),
                 ] else ...[
-                  const Text('가입하신 이메일을 입력하시면\n비밀번호 재설정 링크를 보내드립니다.', style: TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.5)),
+                  const Text(
+                    '가입하신 이메일을 입력하시면\n비밀번호 재설정 링크를 보내드립니다.',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _resetEmailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       hintText: '이메일을 입력하세요',
-                      prefixIcon: const Icon(Icons.email_outlined, size: 18, color: AppColors.textFaint),
+                      prefixIcon: const Icon(
+                        Icons.email_outlined,
+                        size: 18,
+                        color: AppColors.textFaint,
+                      ),
                       filled: true,
                       fillColor: AppColors.background,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.06))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.06))),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.black.withOpacity(0.15))),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.black.withOpacity(0.06),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.black.withOpacity(0.06),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: Colors.black.withOpacity(0.15),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -283,7 +465,14 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: _sendReset,
                       icon: const Icon(Icons.send_outlined, size: 16),
                       label: const Text('재설정 링크 전송'),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                     ),
                   ),
                 ],

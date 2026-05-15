@@ -1,5 +1,5 @@
 name: lofi_frontend
-description: "옛다 띱! - 분실물 퀴즈 매칭 서비스"
+description: "구해조! - 분실물 퀴즈 매칭 서비스"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -21,6 +21,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/app_logo_T.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/app_logo_T.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/app_logo.png
+    - assets/app_logo_T.png
+    - assets/app_logo_f.png
+    - assets/app_logo_T_white_N.png

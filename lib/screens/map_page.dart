@@ -322,7 +322,13 @@ class _MapPageState extends State<MapPage> {
               width: double.infinity,
               color: AppColors.primary,
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: const Center(child: Text('퀴즈 풀고 찾기 🎯', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+              child: Center(child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('퀴즈 풀고 찾기 ', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Image.asset('assets/app_logo_T_white_N.png', width: 20, height: 20),
+                ],
+              )),
             ),
           ),
         ],
