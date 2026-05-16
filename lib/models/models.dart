@@ -20,6 +20,7 @@ class LostItem {
   final String? imageUrl;
   final DateTime createdAt;
   final List<Quiz> quizzes;
+  final String? finderId;
   final String? foundBy;
   final String location;
   final MapPos mapPos;
@@ -32,6 +33,7 @@ class LostItem {
     this.imageUrl,
     required this.createdAt,
     required this.quizzes,
+    this.finderId,
     this.foundBy,
     required this.location,
     required this.mapPos,
@@ -177,6 +179,7 @@ class ShopItem {
 }
 
 class AppUser {
+  final String id;
   final String name;
   final String email;
   final String phone;
@@ -185,6 +188,7 @@ class AppUser {
   final String avatar;
 
   const AppUser({
+    required this.id,
     required this.name,
     required this.email,
     required this.phone,
@@ -194,6 +198,7 @@ class AppUser {
   });
 
   AppUser copyWith({
+    String? id,
     String? name,
     String? email,
     String? phone,
@@ -202,6 +207,7 @@ class AppUser {
     String? avatar,
   }) {
     return AppUser(
+      id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,

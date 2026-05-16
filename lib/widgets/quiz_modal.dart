@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../models/models.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_client.dart';
+import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
 
 class QuizModal extends StatefulWidget {
@@ -13,6 +17,7 @@ class QuizModal extends StatefulWidget {
 }
 
 class _QuizModalState extends State<QuizModal> {
+  final ChatService _chatService = ChatService(ApiClient.instance);
   String _step = 'intro'; // intro | quiz | success | failed
   Quiz? _currentQuiz;
   int? _currentQuizIndex;
@@ -20,6 +25,7 @@ class _QuizModalState extends State<QuizModal> {
   int? _selectedAnswer;
   String _textAnswer = '';
   List<int> _usedQuizzes = [];
+  bool _startingChat = false;
 
   @override
   void initState() {
@@ -30,6 +36,50 @@ class _QuizModalState extends State<QuizModal> {
   void _startQuiz() {
     _pickRandomQuiz();
     setState(() => _step = 'quiz');
+  }
+
+  Future<void> _startChat() async {
+    final auth = context.read<AuthProvider>();
+    final currentUserId = auth.user?.id;
+    final finderId = widget.item.finderId;
+
+    if (!auth.isLoggedIn || currentUserId == null || currentUserId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+      return;
+    }
+    if (finderId == null || finderId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('습득자 정보를 찾을 수 없습니다.')));
+      return;
+    }
+    if (finderId == currentUserId) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('내가 등록한 물건입니다.')));
+      return;
+    }
+
+    setState(() => _startingChat = true);
+    try {
+      final thread = await _chatService.createThread(
+        foundItemId: widget.item.id,
+        otherUserId: finderId,
+        currentUserId: currentUserId,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      context.push('/chat/${thread.id}');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _startingChat = false);
+    }
   }
 
   void _pickRandomQuiz() {
@@ -180,7 +230,11 @@ class _QuizModalState extends State<QuizModal> {
             borderRadius: BorderRadius.circular(24),
           ),
           child: Center(
-            child: Image.asset('assets/app_logo_T_white_N.png', width: 61, height: 61),
+            child: Image.asset(
+              'assets/app_logo_T_white_N.png',
+              width: 61,
+              height: 61,
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -556,12 +610,18 @@ class _QuizModalState extends State<QuizModal> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.push('/chat/${widget.item.id}');
-            },
-            icon: const Icon(Icons.chat_bubble_outline, size: 18),
-            label: const Text(
+            onPressed: _startingChat ? null : _startChat,
+            icon: _startingChat
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.chat_bubble_outline, size: 18),
+            label: Text(
               '채팅 시작하기',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),

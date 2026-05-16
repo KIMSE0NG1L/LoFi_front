@@ -60,6 +60,19 @@ class ItemsService {
         .toList();
   }
 
+  Future<List<LostItem>> fetchFavorites() async {
+    final data = await _api.get('/items/favorites/mine') as List<dynamic>;
+    return data
+        .map((json) => _lostItemFromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<bool> toggleFavorite(String itemId) async {
+    final data =
+        await _api.post('/items/$itemId/favorites') as Map<String, dynamic>;
+    return data['favorited'] == true;
+  }
+
   Future<LostItem> createFoundItem({
     required String category,
     required String title,
@@ -116,6 +129,7 @@ class ItemsService {
           DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.now(),
       quizzes: _quizzesFromJson(json['quizzes']),
+      finderId: json['finder_id'] as String? ?? profile?['id'] as String?,
       foundBy: profile?['name'] as String?,
       location: json['location'] as String? ?? '',
       mapPos: MapPos(

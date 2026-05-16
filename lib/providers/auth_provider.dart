@@ -3,9 +3,11 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/items_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService(ApiClient.instance);
 
   AppUser? _user;
   List<String> _favorites = [];
@@ -16,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     _user = await _authService.login(email: email, password: password);
+    await loadFavorites();
     notifyListeners();
   }
 
@@ -31,6 +34,7 @@ class AuthProvider extends ChangeNotifier {
       password: password,
       phone: phone,
     );
+    await loadFavorites();
     notifyListeners();
   }
 
@@ -41,11 +45,37 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFavorite(String id) {
-    if (_favorites.contains(id)) {
+  Future<void> loadFavorites() async {
+    if (!isLoggedIn) return;
+    final items = await _itemsService.fetchFavorites();
+    _favorites = items.map((item) => item.id).toList();
+  }
+
+  Future<void> toggleFavorite(String id) async {
+    if (!isLoggedIn) return;
+    final wasFavorite = _favorites.contains(id);
+    if (wasFavorite) {
       _favorites.remove(id);
     } else {
       _favorites.add(id);
+    }
+    notifyListeners();
+
+    try {
+      final favorited = await _itemsService.toggleFavorite(id);
+      if (favorited && !_favorites.contains(id)) {
+        _favorites.add(id);
+      }
+      if (!favorited) {
+        _favorites.remove(id);
+      }
+    } catch (_) {
+      if (wasFavorite && !_favorites.contains(id)) {
+        _favorites.add(id);
+      }
+      if (!wasFavorite) {
+        _favorites.remove(id);
+      }
     }
     notifyListeners();
   }
@@ -65,7 +95,18 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateUser({String? name, String? email, String? phone, String? avatar}) {
+  Future<void> refreshProfile() async {
+    if (_user == null) return;
+    _user = await _authService.me(email: _user!.email);
+    notifyListeners();
+  }
+
+  void updateUser({
+    String? name,
+    String? email,
+    String? phone,
+    String? avatar,
+  }) {
     if (_user == null) return;
     _user = _user!.copyWith(
       name: name,

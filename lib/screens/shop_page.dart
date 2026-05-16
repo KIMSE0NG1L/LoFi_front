@@ -83,7 +83,7 @@ class _ShopPageState extends State<ShopPage> {
 
     try {
       await _shopService.purchase(item.id);
-      auth.spendPoints(item.cost);
+      await auth.refreshProfile();
       if (!mounted) return;
       setState(() {
         _successItem = item;

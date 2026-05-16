@@ -76,7 +76,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
         quizzes: quizzes,
       );
       if (!mounted) return;
-      context.read<AuthProvider>().addPoints(50);
+      await context.read<AuthProvider>().refreshProfile();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('습득물이 등록되었습니다. (+50pts)')));
