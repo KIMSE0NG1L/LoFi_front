@@ -314,6 +314,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
       onTap: () {
         Navigator.of(
           context,
+          rootNavigator: true,
         ).push(MaterialPageRoute(builder: (_) => QuizModal(item: item)));
       },
       child: Container(

@@ -174,6 +174,7 @@ class ItemsService {
       final json = item as Map<String, dynamic>;
       final options = json['options'];
       return Quiz(
+        id: json['id'] as String?,
         question: json['question'] as String? ?? '',
         type: json['type'] as String? ?? 'text',
         options: options is List ? options.map((v) => '$v').toList() : null,

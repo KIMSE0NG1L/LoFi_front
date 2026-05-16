@@ -35,7 +35,9 @@ class _QuizModalState extends State<QuizModal> {
 
   void _startQuiz() {
     _pickRandomQuiz();
-    setState(() => _step = 'quiz');
+    if (_currentQuiz != null) {
+      setState(() => _step = 'quiz');
+    }
   }
 
   Future<void> _startChat() async {
@@ -103,33 +105,50 @@ class _QuizModalState extends State<QuizModal> {
     });
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (_currentQuiz == null || _currentQuizIndex == null) return;
 
-    bool isCorrect = false;
-    if (_currentQuiz!.type == 'multiple') {
-      isCorrect = _selectedAnswer == _currentQuiz!.correctAnswer;
-    } else {
-      isCorrect =
-          _textAnswer.trim().toLowerCase() ==
-          (_currentQuiz!.correctAnswer as String).toLowerCase();
-    }
+    final quizId = _currentQuiz!.id;
+    if (quizId == null) return;
+
+    final dynamic answer = _currentQuiz!.type == 'multiple'
+        ? _selectedAnswer
+        : _textAnswer.trim();
 
     _attempts.add(_currentQuizIndex!);
     _usedQuizzes.add(_currentQuizIndex!);
 
-    if (isCorrect) {
-      setState(() => _step = 'success');
-    } else {
-      if (_attempts.length >= 3) {
-        setState(() => _step = 'failed');
+    try {
+      final data = await ApiClient.instance.post(
+        '/quiz/attempt',
+        body: {
+          'foundItemId': widget.item.id,
+          'quizId': quizId,
+          'answer': answer,
+        },
+      ) as Map<String, dynamic>;
+
+      if (!mounted) return;
+      final isCorrect = data['correct'] == true;
+
+      if (isCorrect) {
+        setState(() => _step = 'success');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('틀렸습니다. 다른 문제로 다시 도전하세요!')),
-        );
-        _pickRandomQuiz();
-        setState(() {});
+        if (_attempts.length >= 3) {
+          setState(() => _step = 'failed');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('틀렸습니다. 다른 문제로 다시 도전하세요!')),
+          );
+          _pickRandomQuiz();
+          setState(() {});
+        }
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 

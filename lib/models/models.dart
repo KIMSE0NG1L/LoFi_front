@@ -1,14 +1,16 @@
 class Quiz {
+  final String? id;
   final String question;
   final String type; // 'multiple' | 'text'
   final List<String>? options;
-  final dynamic correctAnswer; // int for multiple, String for text
+  final dynamic correctAnswer;
 
   const Quiz({
+    this.id,
     required this.question,
     required this.type,
     this.options,
-    required this.correctAnswer,
+    this.correctAnswer,
   });
 }
 
