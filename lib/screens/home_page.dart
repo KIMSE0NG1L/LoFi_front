@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
+import '../services/activity_service.dart';
 import '../services/items_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,8 +17,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final ActivityService _activityService = ActivityService(ApiClient.instance);
 
-  List<LostItem> _recentItems = [];
+  List<ActivityItem> _recentActivities = [];
   bool _recentLoading = true;
   String? _recentError;
 
@@ -41,10 +43,11 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadRecentItems() async {
     try {
-      final result = await _itemsService.fetchItems(limit: 5);
+      final result = await _itemsService.fetchItems(limit: 1);
+      final activities = await _activityService.fetchRecent(limit: 5);
       if (!mounted) return;
       setState(() {
-        _recentItems = result.items;
+        _recentActivities = activities;
         _recentLoading = false;
         _recentError = null;
         _targets['registered'] = result.total;
@@ -524,7 +527,7 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    if (_recentItems.isEmpty) {
+    if (_recentActivities.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16),
         child: Text(
@@ -535,12 +538,12 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Column(
-      children: List.generate(_recentItems.length, (index) {
-        final item = _recentItems[index];
+      children: List.generate(_recentActivities.length, (index) {
+        final item = _recentActivities[index];
         return Container(
           decoration: BoxDecoration(
             border: Border(
-              bottom: index < _recentItems.length - 1
+              bottom: index < _recentActivities.length - 1
                   ? BorderSide(color: Colors.black.withOpacity(0.04))
                   : BorderSide.none,
             ),
@@ -555,8 +558,8 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
+                child: Icon(
+                  _activityIcon(item.icon),
                   color: AppColors.primary,
                   size: 18,
                 ),
@@ -579,14 +582,14 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       children: [
                         const Icon(
-                          Icons.place_outlined,
+                          Icons.bolt_outlined,
                           size: 10,
                           color: AppColors.textFaint,
                         ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
-                            item.location,
+                            item.location ?? item.description,
                             style: const TextStyle(
                               fontSize: 10,
                               color: AppColors.textFaint,
@@ -687,6 +690,18 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  IconData _activityIcon(String icon) {
+    switch (icon) {
+      case 'search':
+        return Icons.search_rounded;
+      case 'shopping_bag':
+        return Icons.shopping_bag_outlined;
+      case 'inventory':
+      default:
+        return Icons.inventory_2_outlined;
+    }
   }
 
   String _formatDate(DateTime date) =>

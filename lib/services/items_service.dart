@@ -100,6 +100,34 @@ class ItemsService {
     return _lostItemFromJson(data);
   }
 
+  Future<LostItem> updateFoundItem({
+    required String id,
+    required String category,
+    required String title,
+    required String description,
+    required String location,
+    required List<Map<String, dynamic>> quizzes,
+    double mapX = 0,
+    double mapY = 0,
+  }) async {
+    final data =
+        await _api.patch(
+              '/items/$id',
+              body: {
+                'category': category,
+                'title': title,
+                'description': description,
+                'location': location,
+                'mapX': mapX,
+                'mapY': mapY,
+                'quizzes': _encodeQuizzes(quizzes),
+              },
+            )
+            as Map<String, dynamic>;
+
+    return _lostItemFromJson(data);
+  }
+
   String _encodeQuizzes(List<Map<String, dynamic>> quizzes) {
     final normalized = quizzes
         .map(

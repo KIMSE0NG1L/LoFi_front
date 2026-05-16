@@ -217,3 +217,25 @@ class AppUser {
     );
   }
 }
+
+class ActivityItem {
+  final String id;
+  final String type;
+  final String title;
+  final String description;
+  final String icon;
+  final String? location;
+  final int? pointsDelta;
+  final DateTime createdAt;
+
+  const ActivityItem({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.icon,
+    this.location,
+    this.pointsDelta,
+    required this.createdAt,
+  });
+}

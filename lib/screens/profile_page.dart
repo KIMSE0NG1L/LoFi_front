@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
+import '../services/activity_service.dart';
 import '../services/items_service.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,13 +17,17 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final ActivityService _activityService = ActivityService(ApiClient.instance);
 
   String _activeTab = 'items';
   bool _notifEnabled = true;
   String? _modal;
   List<LostItem> _myFoundItems = [];
+  List<ActivityItem> _myActivities = [];
   bool _itemsLoading = true;
   String? _itemsError;
+  bool _activityLoading = true;
+  String? _activityError;
 
   final _myItems = [
     {
@@ -93,6 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadMyFoundItems();
+    _loadMyActivities();
   }
 
   Future<void> _loadMyFoundItems() async {
@@ -111,6 +117,360 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _itemsLoading = false);
     }
+  }
+
+  Future<void> _loadMyActivities() async {
+    setState(() {
+      _activityLoading = true;
+      _activityError = null;
+    });
+
+    try {
+      final activities = await _activityService.fetchMine();
+      if (!mounted) return;
+      setState(() => _myActivities = activities);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _activityError = e.toString());
+    } finally {
+      if (mounted) setState(() => _activityLoading = false);
+    }
+  }
+
+  Future<void> _openEditFoundItem(LostItem item) async {
+    final titleCtrl = TextEditingController(text: item.title);
+    final descCtrl = TextEditingController(text: item.description);
+    final locationCtrl = TextEditingController(text: item.location);
+    final quizRows = item.quizzes.isEmpty
+        ? [
+            {
+              'question': TextEditingController(),
+              'answer': TextEditingController(),
+            },
+          ]
+        : item.quizzes
+              .map(
+                (quiz) => {
+                  'question': TextEditingController(text: quiz.question),
+                  'answer': TextEditingController(
+                    text: '${quiz.correctAnswer ?? ''}',
+                  ),
+                },
+              )
+              .toList();
+    String selectedCategory = item.category;
+    bool saving = false;
+
+    final updated = await showModalBottomSheet<LostItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> save() async {
+              if (titleCtrl.text.trim().isEmpty ||
+                  selectedCategory.isEmpty ||
+                  locationCtrl.text.trim().isEmpty ||
+                  descCtrl.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('필수 항목을 모두 입력해주세요.')),
+                );
+                return;
+              }
+
+              final quizzes = quizRows
+                  .where(
+                    (row) =>
+                        row['question']!.text.trim().isNotEmpty &&
+                        row['answer']!.text.trim().isNotEmpty,
+                  )
+                  .map(
+                    (row) => {
+                      'question': row['question']!.text.trim(),
+                      'type': 'text',
+                      'correctAnswer': row['answer']!.text.trim(),
+                    },
+                  )
+                  .toList();
+
+              if (quizzes.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('?댁쫰瑜?1媛??댁긽 ?낅젰?댁＜?몄슂.')),
+                );
+                return;
+              }
+
+              setSheetState(() => saving = true);
+              try {
+                final result = await _itemsService.updateFoundItem(
+                  id: item.id,
+                  category: selectedCategory,
+                  title: titleCtrl.text.trim(),
+                  description: descCtrl.text.trim(),
+                  location: locationCtrl.text.trim(),
+                  quizzes: quizzes,
+                  mapX: item.mapPos.x,
+                  mapY: item.mapPos.y,
+                );
+                if (sheetContext.mounted) Navigator.of(sheetContext).pop(result);
+              } catch (e) {
+                setSheetState(() => saving = false);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '습득물 편집',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: saving
+                              ? null
+                              : () => Navigator.of(sheetContext).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _editLabel('물품 이름 *'),
+                    _editField(titleCtrl, '물품 이름'),
+                    const SizedBox(height: 12),
+                    _editLabel('카테고리 *'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _foundCategories.map((category) {
+                        final id = category['id'] as String;
+                        final active = selectedCategory == id;
+                        return ChoiceChip(
+                          selected: active,
+                          onSelected: saving
+                              ? null
+                              : (_) => setSheetState(
+                                    () => selectedCategory = active ? '' : id,
+                                  ),
+                          label: Text(category['name'] as String),
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                            color: active ? Colors.white : AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    _editLabel('습득 장소 *'),
+                    _editField(locationCtrl, '습득 장소'),
+                    const SizedBox(height: 12),
+                    _editLabel('상세 설명 *'),
+                    _editField(descCtrl, '상세 설명', maxLines: 4),
+                    const SizedBox(height: 16),
+                    _editLabel('?댁쫰 *'),
+                    ...quizRows.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final row = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '?댁쫰 ${index + 1}',
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (quizRows.length > 1)
+                                  IconButton(
+                                    onPressed: saving
+                                        ? null
+                                        : () => setSheetState(() {
+                                              row['question']!.dispose();
+                                              row['answer']!.dispose();
+                                              quizRows.removeAt(index);
+                                            }),
+                                    icon: const Icon(Icons.close, size: 16),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            _editField(row['question']!, '질문을 입력하세요'),
+                            const SizedBox(height: 8),
+                            _editField(row['answer']!, '정답을 입력하세요'),
+                          ],
+                        ),
+                      );
+                    }),
+                    if (quizRows.length < 3)
+                      OutlinedButton.icon(
+                        onPressed: saving
+                            ? null
+                            : () => setSheetState(
+                                  () => quizRows.add({
+                                    'question': TextEditingController(),
+                                    'answer': TextEditingController(),
+                                  }),
+                                ),
+                        icon: const Icon(Icons.add_circle_outline, size: 18),
+                        label: const Text('?댁쫰 異붽??섍린'),
+                      ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: saving ? null : save,
+                        icon: saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_outlined, size: 18),
+                        label: Text(saving ? '저장 중...' : '저장하기'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    titleCtrl.dispose();
+    descCtrl.dispose();
+    locationCtrl.dispose();
+    for (final row in quizRows) {
+      row['question']!.dispose();
+      row['answer']!.dispose();
+    }
+
+    if (updated == null || !mounted) return;
+    setState(() {
+      final index = _myFoundItems.indexWhere((value) => value.id == updated.id);
+      if (index == -1) {
+        _myFoundItems.insert(0, updated);
+      } else {
+        _myFoundItems[index] = updated;
+      }
+    });
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('습득물이 수정되었습니다.')));
+  }
+
+  List<Map<String, Object>> get _foundCategories => const [
+    {'id': 'electronics', 'name': '전자기기'},
+    {'id': 'clothing', 'name': '의류'},
+    {'id': 'wallet', 'name': '지갑/카드'},
+    {'id': 'accessories', 'name': '액세서리'},
+    {'id': 'etc', 'name': '기타'},
+  ];
+
+  Widget _editLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.textDark,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+
+  Widget _editField(
+    TextEditingController controller,
+    String hint, {
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppColors.background,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.black.withOpacity(0.15)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+      ),
+      style: const TextStyle(fontSize: 14),
+    );
   }
 
   @override
@@ -342,71 +702,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Column(
                     children: _activeTab == 'items'
                         ? _buildMyFoundItems()
-                        : _myActivity
-                              .map(
-                                (act) => Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
-                                      color: Colors.black.withOpacity(0.05),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.03),
-                                        blurRadius: 6,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        act['emoji']!,
-                                        style: const TextStyle(fontSize: 20),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              act['text']!,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 14,
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              act['time']!,
-                                              style: const TextStyle(
-                                                color: AppColors.textFaint,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        act['pts']!,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                        : _buildMyActivities(),
                   ),
                 ),
                 // Quick links
@@ -628,7 +924,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            Container(
+            IconButton(
+              onPressed: () => _openEditFoundItem(item),
+              icon: const Icon(Icons.edit_outlined),
+              color: AppColors.primary,
+              tooltip: '편집',
+            ),
+            GestureDetector(
+              onTap: () => _openEditFoundItem(item),
+              child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: AppColors.subtle,
@@ -642,11 +946,142 @@ class _ProfilePageState extends State<ProfilePage> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              ),
             ),
           ],
         ),
       );
     }).toList();
+  }
+
+  List<Widget> _buildMyActivities() {
+    if (_activityLoading) {
+      return [
+        const Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+      ];
+    }
+
+    if (_activityError != null) {
+      return [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                _activityError!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _loadMyActivities,
+                child: const Text('?ㅼ떆 ?쒕룄'),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    if (_myActivities.isEmpty) {
+      return [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
+          ),
+          child: const Text(
+            '아직 활동 내역이 없습니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ),
+      ];
+    }
+
+    return _myActivities.map((activity) {
+      final points = activity.pointsDelta;
+      return Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.black.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(_activityIcon(activity.icon), color: AppColors.primary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activity.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _relativeTime(activity.createdAt),
+                    style: const TextStyle(
+                      color: AppColors.textFaint,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (points != null && points != 0)
+              Text(
+                points > 0 ? '+$points' : '$points',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.primary,
+                ),
+              ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  IconData _activityIcon(String icon) {
+    switch (icon) {
+      case 'search':
+        return Icons.search_rounded;
+      case 'shopping_bag':
+        return Icons.shopping_bag_outlined;
+      case 'inventory':
+      default:
+        return Icons.inventory_2_outlined;
+    }
   }
 
   Widget _statCell(String val, String label) {
@@ -882,6 +1317,14 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  String _relativeTime(DateTime date) {
+    final diff = DateTime.now().difference(date.toLocal());
+    if (diff.inMinutes < 1) return '방금';
+    if (diff.inHours < 1) return '${diff.inMinutes}분 전';
+    if (diff.inDays < 1) return '${diff.inHours}시간 전';
+    return '${diff.inDays}일 전';
   }
 
   String _formatDate(DateTime date) =>
