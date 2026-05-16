@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
+
 import '../models/models.dart';
+import '../services/api_client.dart';
+import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final AuthService _authService = AuthService(ApiClient.instance);
+
   AppUser? _user;
   List<String> _favorites = [];
 
@@ -9,19 +14,28 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   List<String> get favorites => _favorites;
 
-  void login(String email, {String name = '사용자', String phone = ''}) {
-    _user = AppUser(
+  Future<void> login(String email, String password) async {
+    _user = await _authService.login(email: email, password: password);
+    notifyListeners();
+  }
+
+  Future<void> signup({
+    required String name,
+    required String email,
+    required String password,
+    String phone = '',
+  }) async {
+    _user = await _authService.signup(
       name: name,
       email: email,
+      password: password,
       phone: phone,
-      points: 120,
-      itemsFound: 3,
-      avatar: '😊',
     );
     notifyListeners();
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await _authService.logout();
     _user = null;
     _favorites = [];
     notifyListeners();

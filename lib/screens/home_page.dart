@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
-import '../data/mock_data.dart';
+import '../models/models.dart';
+import '../services/api_client.dart';
+import '../services/items_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,6 +15,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final ItemsService _itemsService = ItemsService(ApiClient.instance);
+
+  List<LostItem> _recentItems = [];
+  bool _recentLoading = true;
+  String? _recentError;
+
   final Map<String, int> _animatedValues = {
     'registered': 0,
     'matched': 0,
@@ -27,7 +35,30 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _loadRecentItems();
     _startAnimation();
+  }
+
+  Future<void> _loadRecentItems() async {
+    try {
+      final result = await _itemsService.fetchItems(limit: 5);
+      if (!mounted) return;
+      setState(() {
+        _recentItems = result.items;
+        _recentLoading = false;
+        _recentError = null;
+        _targets['registered'] = result.total;
+        _targets['matched'] = 0;
+        _targets['rate'] = result.total == 0 ? 0 : 0;
+      });
+      _startAnimation();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _recentLoading = false;
+        _recentError = e.toString();
+      });
+    }
   }
 
   void _startAnimation() {
@@ -130,7 +161,11 @@ class _HomePageState extends State<HomePage> {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        Image.asset('assets/app_logo_T_white_N.png', width: 37, height: 37),
+                        Image.asset(
+                          'assets/app_logo_T_white_N.png',
+                          width: 37,
+                          height: 37,
+                        ),
                       ],
                     ),
                   ],
@@ -450,90 +485,131 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                child: Column(
-                  children: List.generate(recentActivity.length, (i) {
-                    final item = recentActivity[i];
-                    return Container(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: i < recentActivity.length - 1
-                              ? BorderSide(
-                                  color: Colors.black.withOpacity(0.04),
-                                )
-                              : BorderSide.none,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                item['icon'] as String,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['text'] as String,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.primary,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.access_time,
-                                      size: 10,
-                                      color: AppColors.textFaint,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      item['time'] as String,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.textFaint,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (item['type'] == 'match')
-                            Icon(
-                              Icons.check_circle_outline,
-                              size: 15,
-                              color: Colors.black.withOpacity(0.3),
-                            ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
+                child: _buildRecentItems(),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRecentItems() {
+    if (_recentLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    if (_recentError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              _recentError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _loadRecentItems,
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_recentItems.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          '아직 등록된 습득물이 없습니다.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+      );
+    }
+
+    return Column(
+      children: List.generate(_recentItems.length, (index) {
+        final item = _recentItems[index];
+        return Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: index < _recentItems.length - 1
+                  ? BorderSide(color: Colors.black.withOpacity(0.04))
+                  : BorderSide.none,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.place_outlined,
+                          size: 10,
+                          color: AppColors.textFaint,
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            item.location,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textFaint,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                _formatDate(item.createdAt),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textFaint,
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -612,4 +688,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  String _formatDate(DateTime date) =>
+      '${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
 }

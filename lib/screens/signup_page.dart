@@ -21,7 +21,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _agreeTerms = false;
   bool _agreePrivacy = false;
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_nameCtrl.text.isEmpty || _emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('모든 필드를 입력해주세요')));
       return;
@@ -34,7 +34,19 @@ class _SignupPageState extends State<SignupPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('약관에 동의해주세요')));
       return;
     }
-    context.read<AuthProvider>().login(_emailCtrl.text, name: _nameCtrl.text, phone: _phoneCtrl.text);
+    try {
+      await context.read<AuthProvider>().signup(
+        name: _nameCtrl.text,
+        email: _emailCtrl.text,
+        password: _pwCtrl.text,
+        phone: _phoneCtrl.text,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다! 🎉')));
     context.go('/');
   }

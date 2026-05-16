@@ -19,15 +19,23 @@ class _LoginPageState extends State<LoginPage> {
   final _resetEmailCtrl = TextEditingController();
   bool _resetSent = false;
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요')));
       return;
     }
-    final name = _emailCtrl.text.split('@')[0];
-    context.read<AuthProvider>().login(_emailCtrl.text, name: name);
+    try {
+      await context.read<AuthProvider>().login(_emailCtrl.text, _pwCtrl.text);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('로그인 되었습니다! 🎉')));
