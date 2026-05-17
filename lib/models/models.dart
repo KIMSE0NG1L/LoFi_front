@@ -146,6 +146,7 @@ class ChatThread {
   final String lastTime;
   final int unread;
   final List<ChatMessage> messages;
+  final DateTime? lastMessageAt;
 
   const ChatThread({
     required this.id,
@@ -157,6 +158,7 @@ class ChatThread {
     required this.lastTime,
     required this.unread,
     required this.messages,
+    this.lastMessageAt,
   });
 }
 

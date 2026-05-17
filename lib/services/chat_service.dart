@@ -66,7 +66,8 @@ class ChatService {
     final userB = _map(json['user_b']);
     final item = _map(json['found_items']);
     final other = userA?['id'] == currentUserId ? userB : userA;
-    final messages = _messagesFromJson(json['chat_messages'], currentUserId);
+    final rawMessages = json['chat_messages'];
+    final messages = _messagesFromJson(rawMessages, currentUserId);
     messages.sort((a, b) => a.time.compareTo(b.time));
     final last = messages.isEmpty ? null : messages.last;
 
@@ -80,7 +81,20 @@ class ChatService {
       lastTime: last?.time ?? _formatTime(json['created_at']),
       unread: 0,
       messages: messages,
+      lastMessageAt: _latestMessageAt(rawMessages),
     );
+  }
+
+  DateTime? _latestMessageAt(dynamic rawMessages) {
+    if (rawMessages is! List) return null;
+    DateTime? latest;
+    for (final msg in rawMessages) {
+      if (msg is Map<String, dynamic>) {
+        final dt = DateTime.tryParse(msg['created_at'] as String? ?? '')?.toLocal();
+        if (dt != null && (latest == null || dt.isAfter(latest))) latest = dt;
+      }
+    }
+    return latest;
   }
 
   List<ChatMessage> _messagesFromJson(dynamic value, String currentUserId) {

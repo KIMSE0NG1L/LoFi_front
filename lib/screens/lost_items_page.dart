@@ -25,7 +25,11 @@ class _LostItemsPageState extends State<LostItemsPage> {
   bool _showFilter = false;
   List<LostItem> _items = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  int _page = 1;
+  int _totalPages = 1;
   String? _error;
+  late final ScrollController _scrollCtrl;
 
   final Map<String, List<String>> _locationKeywords = {
     'subway': ['역', '지하철', '호선'],
@@ -58,24 +62,55 @@ class _LostItemsPageState extends State<LostItemsPage> {
   @override
   void initState() {
     super.initState();
+    _scrollCtrl = ScrollController()..addListener(_onScroll);
     _loadItems();
   }
 
-  Future<void> _loadItems() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
 
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadItems() async {
+    setState(() { _loading = true; _error = null; _page = 1; });
     try {
-      final result = await _itemsService.fetchItems(limit: 50);
+      final result = await _itemsService.fetchItems(page: 1, limit: 20);
       if (!mounted) return;
-      setState(() => _items = result.items);
+      setState(() {
+        _items = result.items;
+        _totalPages = result.totalPages;
+        _page = 1;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _page >= _totalPages) return;
+    setState(() => _loadingMore = true);
+    try {
+      final next = _page + 1;
+      final result = await _itemsService.fetchItems(page: next, limit: 20);
+      if (!mounted) return;
+      setState(() {
+        _items.addAll(result.items);
+        _page = next;
+        _totalPages = result.totalPages;
+      });
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -223,9 +258,18 @@ class _LostItemsPageState extends State<LostItemsPage> {
                 : filtered.isEmpty
                 ? _emptyState()
                 : ListView.builder(
+                    controller: _scrollCtrl,
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                    itemCount: filtered.length,
-                    itemBuilder: (ctx, i) => _itemCard(filtered[i]),
+                    itemCount: filtered.length + (_loadingMore ? 1 : 0),
+                    itemBuilder: (ctx, i) {
+                      if (i == filtered.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                        );
+                      }
+                      return _itemCard(filtered[i]);
+                    },
                   ),
           ),
           if (_showFilter) _buildFilterSheet(),
@@ -309,9 +353,66 @@ class _LostItemsPageState extends State<LostItemsPage> {
     );
   }
 
+  void _showLoginPrompt() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 24),
+            const Text('🔐', style: TextStyle(fontSize: 40)),
+            const SizedBox(height: 16),
+            const Text(
+              '로그인이 필요해요',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '퀴즈를 풀려면 먼저 로그인해 주세요.',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.push('/login');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('로그인하기', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _itemCard(LostItem item) {
     return GestureDetector(
       onTap: () {
+        final auth = context.read<AuthProvider>();
+        if (!auth.isLoggedIn) {
+          _showLoginPrompt();
+          return;
+        }
         Navigator.of(
           context,
           rootNavigator: true,

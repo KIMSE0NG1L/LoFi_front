@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
@@ -21,11 +22,45 @@ class _ChatListPageState extends State<ChatListPage> {
   List<ChatThread> _threads = [];
   bool _loading = true;
   String? _error;
+  Map<String, DateTime> _lastSeen = {};
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadThreads());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadLastSeen();
+      _loadThreads();
+    });
+  }
+
+  Future<void> _loadLastSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith('chat_seen_'));
+    final map = <String, DateTime>{};
+    for (final key in keys) {
+      final threadId = key.replaceFirst('chat_seen_', '');
+      final iso = prefs.getString(key);
+      if (iso != null) {
+        final dt = DateTime.tryParse(iso);
+        if (dt != null) map[threadId] = dt;
+      }
+    }
+    if (mounted) setState(() => _lastSeen = map);
+  }
+
+  bool _hasUnread(ChatThread thread) {
+    final lastMsgAt = thread.lastMessageAt;
+    if (lastMsgAt == null) return false;
+    final seen = _lastSeen[thread.id];
+    if (seen == null) return true;
+    return lastMsgAt.isAfter(seen);
+  }
+
+  Future<void> _openChat(String threadId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chat_seen_$threadId', DateTime.now().toIso8601String());
+    setState(() => _lastSeen[threadId] = DateTime.now());
+    if (mounted) context.push('/chat/$threadId');
   }
 
   Future<void> _loadThreads() async {
@@ -165,8 +200,9 @@ class _ChatListPageState extends State<ChatListPage> {
       itemCount: _threads.length,
       itemBuilder: (_, index) {
         final thread = _threads[index];
+        final unread = _hasUnread(thread);
         return GestureDetector(
-          onTap: () => context.push('/chat/${thread.id}'),
+          onTap: () => _openChat(thread.id),
           child: Container(
             margin: const EdgeInsets.only(bottom: 2),
             decoration: BoxDecoration(
@@ -207,20 +243,35 @@ class _ChatListPageState extends State<ChatListPage> {
                           Expanded(
                             child: Text(
                               thread.otherUser,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                              style: TextStyle(
+                                fontWeight: unread ? FontWeight.bold : FontWeight.w600,
                                 fontSize: 15,
                                 color: AppColors.primary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text(
-                            thread.lastTime,
-                            style: const TextStyle(
-                              color: AppColors.textLight,
-                              fontSize: 11,
-                            ),
+                          Row(
+                            children: [
+                              if (unread)
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              Text(
+                                thread.lastTime,
+                                style: TextStyle(
+                                  color: unread ? AppColors.primary : AppColors.textLight,
+                                  fontSize: 11,
+                                  fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -229,9 +280,10 @@ class _ChatListPageState extends State<ChatListPage> {
                         thread.lastMessage.isEmpty
                             ? '메시지가 없습니다.'
                             : thread.lastMessage,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textMuted,
+                          color: unread ? AppColors.primary : AppColors.textMuted,
+                          fontWeight: unread ? FontWeight.w500 : FontWeight.normal,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
