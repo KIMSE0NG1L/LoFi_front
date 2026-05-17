@@ -16,6 +16,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final ItemsService _itemsService = ItemsService(ApiClient.instance);
   final ActivityService _activityService = ActivityService(ApiClient.instance);
 
@@ -90,6 +91,7 @@ class _HomePageState extends State<HomePage> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
@@ -106,10 +108,11 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {},
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
           ),
         ],
       ),
+      endDrawer: _buildDrawer(auth),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,4 +704,168 @@ class _HomePageState extends State<HomePage> {
 
   String _formatDate(DateTime date) =>
       '${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+
+  Widget _buildDrawer(AuthProvider auth) {
+    return Drawer(
+      width: 280,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // 헤더
+            Container(
+              width: double.infinity,
+              color: AppColors.primary,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: auth.isLoggedIn
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          auth.user!.avatar.isNotEmpty ? auth.user!.avatar : '🙂',
+                          style: const TextStyle(fontSize: 36),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          auth.user!.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          auth.user!.email,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.5),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.bolt_rounded, color: Colors.amber, size: 15),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${auth.user!.points} pts',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('👋', style: TextStyle(fontSize: 36)),
+                        const SizedBox(height: 10),
+                        const Text(
+                          '로그인하고\n더 많은 기능을 이용하세요',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/login');
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              '로그인',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 8),
+            // 메뉴 항목
+            _drawerItem(Icons.favorite_outline_rounded, '즐겨찾기', () {
+              Navigator.of(context).pop();
+              context.push('/favorites');
+            }),
+            _drawerItem(Icons.emoji_events_outlined, '랭킹', () {
+              Navigator.of(context).pop();
+              context.push('/ranking');
+            }),
+            _drawerItem(Icons.shopping_bag_outlined, '상점', () {
+              Navigator.of(context).pop();
+              context.push('/shop');
+            }),
+            _drawerItem(Icons.map_outlined, '지도', () {
+              Navigator.of(context).pop();
+              context.push('/map');
+            }),
+            if (auth.isLoggedIn) ...[
+              const Divider(indent: 16, endIndent: 16),
+              _drawerItem(Icons.manage_accounts_outlined, '계정 설정', () {
+                Navigator.of(context).pop();
+                context.push('/account-settings');
+              }),
+            ],
+            const Spacer(),
+            const Divider(indent: 16, endIndent: 16),
+            if (auth.isLoggedIn)
+              _drawerItem(
+                Icons.logout_rounded,
+                '로그아웃',
+                () async {
+                  Navigator.of(context).pop();
+                  await auth.logout();
+                },
+                color: Colors.red.shade400,
+              )
+            else
+              _drawerItem(Icons.login_rounded, '로그인', () {
+                Navigator.of(context).pop();
+                context.push('/login');
+              }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    final c = color ?? AppColors.primary;
+    return ListTile(
+      leading: Icon(icon, color: c, size: 22),
+      title: Text(
+        label,
+        style: TextStyle(color: c, fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+      onTap: onTap,
+      dense: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
 }
