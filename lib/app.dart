@@ -89,7 +89,8 @@ GoRouter _buildRouter(bool onboardingDone) => GoRouter(
 
 class App extends StatefulWidget {
   final bool onboardingDone;
-  const App({super.key, this.onboardingDone = true});
+  final AuthProvider authProvider;
+  const App({super.key, this.onboardingDone = true, required this.authProvider});
 
   @override
   State<App> createState() => _AppState();
@@ -106,8 +107,8 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    return ChangeNotifierProvider.value(
+      value: widget.authProvider,
       child: MaterialApp.router(
         title: '구해조!',
         theme: AppTheme.theme,

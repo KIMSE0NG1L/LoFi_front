@@ -16,6 +16,14 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   List<String> get favorites => _favorites;
 
+  Future<void> tryRestoreSession() async {
+    final user = await _authService.restoreSession();
+    if (user == null) return;
+    _user = user;
+    await loadFavorites();
+    notifyListeners();
+  }
+
   Future<void> login(String email, String password) async {
     _user = await _authService.login(email: email, password: password);
     await loadFavorites();

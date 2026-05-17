@@ -22,6 +22,7 @@ class ApiClient {
       ? 'http://10.0.2.2:3000/api'
       : 'http://localhost:3000/api';
   static const String _tokenKey = 'access_token';
+  static const String _emailKey = 'user_email';
 
   final HttpClient _client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 10);
@@ -39,6 +40,21 @@ class ApiClient {
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+  }
+
+  Future<String?> get savedEmail async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_emailKey);
+  }
+
+  Future<void> saveEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_emailKey, email);
+  }
+
+  Future<void> clearEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_emailKey);
   }
 
   Future<dynamic> get(String path, {Map<String, String>? query}) {

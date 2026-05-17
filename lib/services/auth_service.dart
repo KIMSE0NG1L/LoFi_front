@@ -18,6 +18,7 @@ class AuthService {
             as Map<String, dynamic>;
 
     await _api.saveToken(data['token'] as String);
+    await _api.saveEmail(email);
     return _userFromJson(data['user'] as Map<String, dynamic>, email);
   }
 
@@ -40,10 +41,30 @@ class AuthService {
             as Map<String, dynamic>;
 
     await _api.saveToken(data['token'] as String);
+    await _api.saveEmail(email);
     return _userFromJson(data['user'] as Map<String, dynamic>, email);
   }
 
-  Future<void> logout() => _api.clearToken();
+  Future<void> logout() async {
+    await _api.clearToken();
+    await _api.clearEmail();
+  }
+
+  Future<AppUser?> restoreSession() async {
+    final token = await _api.token;
+    final email = await _api.savedEmail;
+    if (token == null || token.isEmpty || email == null || email.isEmpty) {
+      return null;
+    }
+    try {
+      final data = await _api.get('/users/me') as Map<String, dynamic>;
+      return _userFromJson(data, email);
+    } catch (_) {
+      await _api.clearToken();
+      await _api.clearEmail();
+      return null;
+    }
+  }
 
   Future<AppUser> me({required String email}) async {
     final data = await _api.get('/users/me') as Map<String, dynamic>;
