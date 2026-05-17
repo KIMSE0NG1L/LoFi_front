@@ -110,7 +110,7 @@ class _ShopPageState extends State<ShopPage> {
         backgroundColor: AppColors.primary.withOpacity(0.95),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '포인트 상점',

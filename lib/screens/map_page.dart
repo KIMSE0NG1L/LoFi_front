@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/models.dart';
@@ -45,7 +46,7 @@ class _MapPageState extends State<MapPage> {
       backgroundColor: const Color(0xFF0D0D0D),
       appBar: AppBar(
         backgroundColor: AppColors.primary.withOpacity(0.95),
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.of(context).pop()),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
         title: const Text('지도로 찾기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17)),
         actions: [
           Padding(

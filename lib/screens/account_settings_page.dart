@@ -33,7 +33,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       phone: _phoneCtrl.text,
     );
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('정보가 저장되었습니다')));
-    Navigator.of(context).pop();
+    context.canPop() ? context.pop() : context.go('/');
   }
 
   void _deleteAccount() {
@@ -48,7 +48,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.of(context).pop()),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
         title: const Text('계정 설정', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
       ),

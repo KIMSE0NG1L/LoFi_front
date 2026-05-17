@@ -89,7 +89,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
         backgroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '분실물 찾기',

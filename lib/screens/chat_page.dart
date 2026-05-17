@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
@@ -177,7 +178,7 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: AppColors.primary.withOpacity(0.95),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: thread == null
             ? const Text('채팅', style: TextStyle(color: Colors.white))

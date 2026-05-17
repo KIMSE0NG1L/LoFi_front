@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 
 class RegisterLostPage extends StatefulWidget {
@@ -29,7 +30,7 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('분실물 신고가 완료되었습니다! 알림을 보내드릴게요 📢')));
-    Navigator.of(context).pop();
+    context.canPop() ? context.pop() : context.go('/');
   }
 
   @override
@@ -38,7 +39,7 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.of(context).pop()),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
         title: const Text('분실물 신고', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
       ),

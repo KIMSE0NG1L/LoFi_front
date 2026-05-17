@@ -43,9 +43,22 @@ GoRouter _buildRouter(bool onboardingDone) => GoRouter(
           '/chat/',
         ];
         final hideNav = noNavPaths.any((p) => location.startsWith(p));
-        return Scaffold(
-          body: child,
-          bottomNavigationBar: hideNav ? null : const BottomNav(),
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (didPop) return;
+            final router = GoRouter.of(ctx);
+            if (router.canPop()) {
+              router.pop();
+            } else if (location != '/') {
+              ctx.go('/');
+            }
+            // 홈에서 뒤로가기 → 앱 종료하지 않음
+          },
+          child: Scaffold(
+            body: child,
+            bottomNavigationBar: hideNav ? null : const BottomNav(),
+          ),
         );
       },
       routes: [

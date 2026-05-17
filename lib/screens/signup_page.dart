@@ -59,7 +59,7 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text('회원가입', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
@@ -126,7 +126,7 @@ class _SignupPageState extends State<SignupPage> {
             const SizedBox(height: 16),
             Center(
               child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () => context.canPop() ? context.pop() : context.go('/'),
                 child: const Text('이미 계정이 있으신가요? 로그인', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
               ),
             ),
