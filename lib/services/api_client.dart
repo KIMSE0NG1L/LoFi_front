@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,6 +72,52 @@ class ApiClient {
 
   Future<dynamic> delete(String path) {
     return _request('DELETE', path);
+  }
+
+  Future<String> uploadImage(File imageFile) async {
+    final uri = Uri.parse('$baseUrl/upload/image');
+    final request = await _client.postUrl(uri);
+
+    final savedToken = await token;
+    if (savedToken != null && savedToken.isNotEmpty) {
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $savedToken');
+    }
+
+    final boundary = 'LoFiBoundary${DateTime.now().millisecondsSinceEpoch}';
+    request.headers.set(
+      HttpHeaders.contentTypeHeader,
+      'multipart/form-data; boundary=$boundary',
+    );
+
+    final fileName = imageFile.path.split(Platform.pathSeparator).last;
+    final ext = fileName.split('.').last.toLowerCase();
+    final mimeType = ext == 'png' ? 'image/png' : 'image/jpeg';
+    final fileBytes = await imageFile.readAsBytes();
+
+    final Uint8List prefix = utf8.encode(
+      '--$boundary\r\n'
+      'Content-Disposition: form-data; name="image"; filename="$fileName"\r\n'
+      'Content-Type: $mimeType\r\n\r\n',
+    );
+    final Uint8List suffix = utf8.encode('\r\n--$boundary--\r\n');
+
+    request.contentLength = prefix.length + fileBytes.length + suffix.length;
+    request.add(prefix);
+    request.add(fileBytes);
+    request.add(suffix);
+
+    final response = await request.close();
+    final text = await response.transform(utf8.decoder).join();
+    final data = jsonDecode(text);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = data is Map && data['message'] is String
+          ? data['message'] as String
+          : 'Upload failed (${response.statusCode})';
+      throw ApiException(response.statusCode, message);
+    }
+
+    return (data as Map<String, dynamic>)['url'] as String;
   }
 
   Future<dynamic> _request(

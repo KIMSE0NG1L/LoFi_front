@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -25,6 +28,8 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
 
   String _selectedCategory = '';
   bool _submitting = false;
+  File? _imageFile;
+  final _imagePicker = ImagePicker();
 
   final _categories = [
     {'id': 'electronics', 'name': '전자기기', 'icon': Icons.devices_other},
@@ -33,6 +38,16 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     {'id': 'accessories', 'name': '액세서리', 'icon': Icons.watch_outlined},
     {'id': 'etc', 'name': '기타', 'icon': Icons.inventory_2_outlined},
   ];
+
+  Future<void> _pickImage() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 85,
+    );
+    if (picked != null) setState(() => _imageFile = File(picked.path));
+  }
 
   Future<void> _submit() async {
     if (_titleCtrl.text.trim().isEmpty ||
@@ -69,19 +84,25 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
 
     setState(() => _submitting = true);
     try {
+      String? imageUrl;
+      if (_imageFile != null) {
+        imageUrl = await ApiClient.instance.uploadImage(_imageFile!);
+      }
+
       await _itemsService.createFoundItem(
         category: _selectedCategory,
         title: _titleCtrl.text.trim(),
         description: _descCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
         quizzes: quizzes,
+        imageUrl: imageUrl,
       );
       if (!mounted) return;
       await context.read<AuthProvider>().refreshProfile();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('습득물이 등록되었습니다. (+50pts)')));
-      Navigator.of(context).pop(true);
+      if (context.canPop()) { context.pop(); } else { context.go('/'); }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -157,6 +178,8 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               _label('상세 설명 *'),
               _field(_descCtrl, '물건의 특징, 상태 등을 자세히 적어주세요.', maxLines: 4),
             ]),
+            const SizedBox(height: 16),
+            _imagePickerSection(),
             const SizedBox(height: 16),
             _sectionCard('퀴즈 설정', [
               const Text(
@@ -255,6 +278,87 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _imagePickerSection() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        height: 180,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: _imageFile != null
+                ? AppColors.primary.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            width: _imageFile != null ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
+          ],
+        ),
+        clipBehavior: Clip.hardEdge,
+        child: _imageFile != null
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.file(_imageFile!, fit: BoxFit.cover),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _imageFile = null),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      child: const Text(
+                        '사진 변경',
+                        style: TextStyle(color: Colors.white, fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined,
+                      size: 40, color: AppColors.textFaint),
+                  const SizedBox(height: 10),
+                  Text(
+                    '사진 추가 (선택)',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '갤러리에서 물건 사진을 선택해 주세요',
+                    style: TextStyle(color: AppColors.textFaint, fontSize: 11),
+                  ),
+                ],
+              ),
       ),
     );
   }

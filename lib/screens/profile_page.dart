@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
@@ -160,6 +163,9 @@ class _ProfilePageState extends State<ProfilePage> {
               .toList();
     String selectedCategory = item.category;
     bool saving = false;
+    File? editImageFile;
+    String? currentImageUrl = item.imageUrl;
+    final imagePicker = ImagePicker();
 
     final updated = await showModalBottomSheet<LostItem>(
       context: context,
@@ -206,6 +212,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
               setSheetState(() => saving = true);
               try {
+                String? imageUrl = currentImageUrl;
+                if (editImageFile != null) {
+                  imageUrl = await ApiClient.instance.uploadImage(editImageFile!);
+                }
                 final result = await _itemsService.updateFoundItem(
                   id: item.id,
                   category: selectedCategory,
@@ -215,6 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   quizzes: quizzes,
                   mapX: item.mapPos.x,
                   mapY: item.mapPos.y,
+                  imageUrl: imageUrl,
                 );
                 if (sheetContext.mounted) Navigator.of(sheetContext).pop(result);
               } catch (e) {
@@ -268,6 +279,115 @@ class _ProfilePageState extends State<ProfilePage> {
                           icon: const Icon(Icons.close),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: saving
+                          ? null
+                          : () async {
+                              final picked = await imagePicker.pickImage(
+                                source: ImageSource.gallery,
+                                maxWidth: 1200,
+                                maxHeight: 1200,
+                                imageQuality: 85,
+                              );
+                              if (picked != null) {
+                                setSheetState(() => editImageFile = File(picked.path));
+                              }
+                            },
+                      child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: (editImageFile != null || currentImageUrl != null)
+                                ? AppColors.primary.withOpacity(0.3)
+                                : Colors.black.withOpacity(0.08),
+                            width: (editImageFile != null || currentImageUrl != null) ? 2 : 1,
+                          ),
+                        ),
+                        clipBehavior: Clip.hardEdge,
+                        child: editImageFile != null
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.file(editImageFile!, fit: BoxFit.cover),
+                                  Positioned(
+                                    top: 6,
+                                    right: 6,
+                                    child: GestureDetector(
+                                      onTap: () => setSheetState(() {
+                                        editImageFile = null;
+                                        currentImageUrl = null;
+                                      }),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.55),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        padding: const EdgeInsets.all(5),
+                                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 6,
+                                    right: 6,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.85),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      child: const Text('사진 변경', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : currentImageUrl != null
+                                ? Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(currentImageUrl!, fit: BoxFit.cover),
+                                      Positioned(
+                                        top: 6,
+                                        right: 6,
+                                        child: GestureDetector(
+                                          onTap: () => setSheetState(() => currentImageUrl = null),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.55),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            padding: const EdgeInsets.all(5),
+                                            child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 6,
+                                        right: 6,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withOpacity(0.85),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          child: const Text('사진 변경', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_photo_alternate_outlined, size: 32, color: AppColors.textFaint),
+                                      const SizedBox(height: 8),
+                                      Text('사진 추가 (선택)', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    ],
+                                  ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _editLabel('물품 이름 *'),

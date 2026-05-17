@@ -81,6 +81,7 @@ class ItemsService {
     required List<Map<String, dynamic>> quizzes,
     double mapX = 0,
     double mapY = 0,
+    String? imageUrl,
   }) async {
     final data =
         await _api.post(
@@ -93,6 +94,7 @@ class ItemsService {
                 'mapX': mapX,
                 'mapY': mapY,
                 'quizzes': _encodeQuizzes(quizzes),
+                if (imageUrl != null) 'imageUrl': imageUrl,
               },
             )
             as Map<String, dynamic>;
@@ -109,6 +111,7 @@ class ItemsService {
     required List<Map<String, dynamic>> quizzes,
     double mapX = 0,
     double mapY = 0,
+    String? imageUrl,
   }) async {
     final data =
         await _api.patch(
@@ -121,6 +124,7 @@ class ItemsService {
                 'mapX': mapX,
                 'mapY': mapY,
                 'quizzes': _encodeQuizzes(quizzes),
+                if (imageUrl != null) 'imageUrl': imageUrl,
               },
             )
             as Map<String, dynamic>;
