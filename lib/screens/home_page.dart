@@ -370,11 +370,6 @@ class _HomePageState extends State<HomePage> {
                     '/chats',
                   ),
                   _featureCell(Icons.shopping_bag_outlined, '상점', '/shop'),
-                  _featureCell(
-                    Icons.warning_amber_rounded,
-                    '신고',
-                    '/register-lost',
-                  ),
                 ],
               ),
             ),
