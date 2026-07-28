@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../services/activity_service.dart';
 import '../services/items_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/surfaces.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -170,10 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final updated = await showModalBottomSheet<LostItem>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
@@ -237,7 +235,8 @@ class _ProfilePageState extends State<ProfilePage> {
               }
             }
 
-            return Padding(
+            return GlassContainer(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
@@ -793,17 +792,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.black.withOpacity(0.05)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
+                    decoration: neumorphicDecoration(radius: 18),
                     child: Row(
                       children: [
                         _tabBtn('items', '내 물건', Icons.inventory_2_outlined),
@@ -866,19 +855,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 12),
                       Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: Colors.black.withOpacity(0.05),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
+                        decoration: neumorphicDecoration(radius: 18),
                         child: Column(
                           children: [
                             _settingRow(
@@ -954,11 +931,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
+          decoration: neumorphicDecoration(radius: 18),
           child: Column(
             children: [
               Text(
@@ -985,11 +958,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
+          decoration: neumorphicDecoration(radius: 18),
           child: const Text(
             '아직 등록한 습득물이 없습니다.',
             textAlign: TextAlign.center,
@@ -1003,14 +972,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
-          ],
-        ),
+        decoration: neumorphicDecoration(radius: 18),
         child: Row(
           children: [
             const Icon(
@@ -1091,11 +1053,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
+          decoration: neumorphicDecoration(radius: 18),
           child: Column(
             children: [
               Text(
@@ -1122,11 +1080,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
+          decoration: neumorphicDecoration(radius: 18),
           child: const Text(
             '아직 활동 내역이 없습니다.',
             textAlign: TextAlign.center,
@@ -1141,14 +1095,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
-          ],
-        ),
+        decoration: neumorphicDecoration(radius: 18),
         child: Row(
           children: [
             Icon(_activityIcon(activity.icon), color: AppColors.primary),
@@ -1275,14 +1222,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6),
-            ],
-          ),
+          decoration: neumorphicDecoration(radius: 14),
           child: Column(
             children: [
               Text(emoji, style: const TextStyle(fontSize: 22)),
@@ -1351,13 +1291,11 @@ class _ProfilePageState extends State<ProfilePage> {
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
             onTap: () {},
-            child: Container(
+            child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.75,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
+              child: GlassContainer(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -1410,7 +1348,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   Divider(height: 1, color: Colors.black.withOpacity(0.06)),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      MediaQuery.of(context).padding.bottom + 84,
+                    ),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -1431,6 +1374,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           ),

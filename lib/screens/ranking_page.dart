@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/models.dart';
 import '../services/ranking_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/surfaces.dart';
 
 class RankingPage extends StatefulWidget {
   const RankingPage({super.key});
@@ -48,14 +49,14 @@ class _RankingPageState extends State<RankingPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '랭킹',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
         ),
         automaticallyImplyLeading: false,
       ),
@@ -218,14 +219,7 @@ class _RankingPageState extends State<RankingPage> {
 
   Widget _buildRankingList() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
-        ],
-      ),
+      decoration: neumorphicDecoration(radius: 18),
       child: Column(
         children: [
           Container(
@@ -347,14 +341,7 @@ class _RankingPageState extends State<RankingPage> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
-        ],
-      ),
+      decoration: neumorphicDecoration(radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

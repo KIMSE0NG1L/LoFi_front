@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../services/items_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/quiz_modal.dart';
+import '../widgets/surfaces.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -60,14 +61,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '즐겨찾기',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
         ),
         automaticallyImplyLeading: false,
       ),
@@ -129,14 +130,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       ).push(MaterialPageRoute(builder: (_) => QuizModal(item: item))),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
-          ],
-        ),
+        decoration: neumorphicDecoration(radius: 18),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(

@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/items_service.dart';
 import '../widgets/quiz_modal.dart';
+import '../widgets/surfaces.dart';
 
 class LostItemsPage extends StatefulWidget {
   const LostItemsPage({super.key});
@@ -120,14 +121,14 @@ class _LostItemsPageState extends State<LostItemsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '분실물 찾기',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold),
         ),
         automaticallyImplyLeading: false,
       ),
@@ -355,11 +356,9 @@ class _LostItemsPageState extends State<LostItemsPage> {
   void _showLoginPrompt() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Padding(
+      backgroundColor: Colors.transparent,
+      builder: (_) => GlassContainer(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -419,14 +418,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
-          ],
-        ),
+        decoration: neumorphicDecoration(radius: 18),
         child: Column(
           children: [
             Padding(
@@ -632,12 +624,9 @@ class _LostItemsPageState extends State<LostItemsPage> {
             right: 0,
             child: GestureDetector(
               onTap: () {},
-              child: Container(
+              child: GlassContainer(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

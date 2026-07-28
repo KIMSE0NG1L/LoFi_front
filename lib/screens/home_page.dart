@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../models/models.dart';
 import '../services/activity_service.dart';
 import '../services/items_service.dart';
+import '../widgets/surfaces.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -93,12 +94,12 @@ class _HomePageState extends State<HomePage> {
       key: _scaffoldKey,
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         automaticallyImplyLeading: false,
         title: const Text(
           '구해조!',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textDark,
             fontWeight: FontWeight.bold,
             fontSize: 20,
             letterSpacing: -0.3,
@@ -106,7 +107,7 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(Icons.menu, color: AppColors.textDark),
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
           ),
         ],
@@ -216,19 +217,7 @@ class _HomePageState extends State<HomePage> {
                       onTap: () => context.push('/lost-items'),
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: Colors.black.withOpacity(0.05),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
+                        decoration: neumorphicDecoration(radius: 18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -380,17 +369,7 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black.withOpacity(0.05)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
+                decoration: neumorphicDecoration(radius: 18),
                 child: Row(
                   children: [
                     Container(
@@ -474,17 +453,7 @@ class _HomePageState extends State<HomePage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black.withOpacity(0.05)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
+                decoration: neumorphicDecoration(radius: 18),
                 child: _buildRecentItems(),
               ),
             ),

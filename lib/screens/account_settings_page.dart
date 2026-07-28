@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/surfaces.dart';
 
 class AccountSettingsPage extends StatefulWidget {
   const AccountSettingsPage({super.key});
@@ -47,9 +48,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
-        title: const Text('계정 설정', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.background,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.textDark), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
+        title: const Text('계정 설정', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
       ),
       body: Stack(
@@ -143,9 +144,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Container(
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(24),
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30)]),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(16)), child: Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 28)),
               const SizedBox(height: 16),

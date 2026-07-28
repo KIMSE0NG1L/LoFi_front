@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import 'surfaces.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -14,14 +15,14 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  bool _showRegisterSheet = false;
-
   void _showRegister() {
-    setState(() => _showRegisterSheet = true);
-  }
-
-  void _hideRegister() {
-    setState(() => _showRegisterSheet = false);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) =>
+          _RegisterSheet(onClose: () => Navigator.of(sheetContext).pop()),
+    );
   }
 
   @override
@@ -29,64 +30,46 @@ class _BottomNavState extends State<BottomNav> {
     final auth = context.watch<AuthProvider>();
     final location = GoRouterState.of(context).uri.toString();
 
-    return Stack(
-      children: [
-        if (_showRegisterSheet)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _hideRegister,
-              child: Container(color: Colors.black54),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: SafeArea(
-            top: false,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.white.withOpacity(0.6)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: SafeArea(
+        top: false,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              height: 68,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.white.withOpacity(0.6)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                  child: Row(
-                    children: [
-                      _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
-                      _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
-                      _CenterButton(onTap: _showRegister),
-                      _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
-                      _NavItem(
-                        icon: Icons.person_outline_rounded,
-                        label: 'MY',
-                        path: auth.isLoggedIn ? '/profile' : '/login',
-                        currentPath: location,
-                      ),
-                    ],
+                ],
+              ),
+              child: Row(
+                children: [
+                  _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
+                  _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
+                  _CenterButton(onTap: _showRegister),
+                  _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
+                  _NavItem(
+                    icon: Icons.person_outline_rounded,
+                    label: 'MY',
+                    path: auth.isLoggedIn ? '/profile' : '/login',
+                    currentPath: location,
                   ),
-                ),
+                ],
               ),
             ),
           ),
         ),
-        if (_showRegisterSheet)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _RegisterSheet(onClose: _hideRegister),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -210,11 +193,8 @@ class _RegisterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    return GlassContainer(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,

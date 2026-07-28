@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/surfaces.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -291,15 +292,9 @@ class _LoginPageState extends State<LoginPage> {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Container(
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(24),
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30),
-              ],
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

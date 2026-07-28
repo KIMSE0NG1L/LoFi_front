@@ -153,9 +153,9 @@ class _QuizModalState extends State<QuizModal> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: const Icon(Icons.close, color: AppColors.textDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Column(
@@ -164,14 +164,14 @@ class _QuizModalState extends State<QuizModal> {
             Text(
               widget.item.title,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textDark,
                 fontWeight: FontWeight.w600,
                 fontSize: 17,
               ),
             ),
             const Text(
               '소유권 인증',
-              style: TextStyle(color: Colors.white54, fontSize: 11),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11),
             ),
           ],
         ),
@@ -563,7 +563,7 @@ class _QuizModalState extends State<QuizModal> {
           width: 96,
           height: 96,
           decoration: BoxDecoration(
-            color: Colors.green,
+            color: AppColors.success,
             borderRadius: BorderRadius.circular(24),
           ),
           child: const Icon(
@@ -602,18 +602,18 @@ class _QuizModalState extends State<QuizModal> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: AppColors.success.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.emoji_events, color: Colors.green, size: 20),
+                Icon(Icons.emoji_events, color: AppColors.success, size: 20),
                 SizedBox(width: 8),
                 Text(
                   '+50 포인트 획득!',
                   style: TextStyle(
-                    color: Colors.green,
+                    color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

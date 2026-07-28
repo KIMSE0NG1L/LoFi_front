@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/shop_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/surfaces.dart';
 
 class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
@@ -106,15 +107,15 @@ class _ShopPageState extends State<ShopPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text(
           '포인트 상점',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textDark,
             fontWeight: FontWeight.w600,
             fontSize: 17,
           ),
@@ -277,17 +278,7 @@ class _ShopPageState extends State<ShopPage> {
                   opacity: item.stock == 0 ? 0.5 : 1,
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.black.withOpacity(0.05)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
+                    decoration: neumorphicDecoration(radius: 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -397,12 +388,9 @@ class _ShopPageState extends State<ShopPage> {
           alignment: Alignment.bottomCenter,
           child: GestureDetector(
             onTap: () {},
-            child: Container(
+            child: GlassContainer(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -522,15 +510,9 @@ class _ShopPageState extends State<ShopPage> {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Container(
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(24),
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 30),
-              ],
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/surfaces.dart';
 
 class ChatPage extends StatefulWidget {
   final String chatId;
@@ -174,13 +175,13 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: thread == null
-            ? const Text('채팅', style: TextStyle(color: Colors.white))
+            ? const Text('채팅', style: TextStyle(color: AppColors.textDark))
             : Row(
                 children: [
                   Text(
@@ -195,7 +196,7 @@ class _ChatPageState extends State<ChatPage> {
                         Text(
                           thread.otherUser,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textDark,
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
@@ -203,8 +204,8 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         Text(
                           '${thread.itemEmoji} ${thread.itemTitle}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
                             fontSize: 11,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -512,12 +513,9 @@ class _ChatPageState extends State<ChatPage> {
             right: 0,
             child: GestureDetector(
               onTap: () {},
-              child: Container(
+              child: GlassContainer(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
