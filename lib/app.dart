@@ -23,9 +23,20 @@ import 'widgets/bottom_nav.dart';
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
-GoRouter _buildRouter(bool onboardingDone) => GoRouter(
+GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRouter(
   navigatorKey: _rootKey,
   initialLocation: onboardingDone ? '/' : '/onboarding',
+  refreshListenable: authProvider,
+  redirect: (ctx, state) {
+    final loggedIn = authProvider.isLoggedIn;
+    final location = state.uri.toString();
+    final isAuthRoute = location == '/login' || location == '/signup';
+
+    if (location == '/onboarding') return null;
+    if (!loggedIn && !isAuthRoute) return '/login';
+    if (loggedIn && isAuthRoute) return '/';
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/onboarding',
@@ -38,7 +49,6 @@ GoRouter _buildRouter(bool onboardingDone) => GoRouter(
         final noNavPaths = [
           '/login',
           '/signup',
-          '/profile',
           '/account-settings',
           '/chat/',
         ];
@@ -56,6 +66,7 @@ GoRouter _buildRouter(bool onboardingDone) => GoRouter(
             // 홈에서 뒤로가기 → 앱 종료하지 않음
           },
           child: Scaffold(
+            extendBody: true,
             body: child,
             bottomNavigationBar: hideNav ? null : const BottomNav(),
           ),
@@ -115,7 +126,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    _router = _buildRouter(widget.onboardingDone);
+    _router = _buildRouter(widget.onboardingDone, widget.authProvider);
   }
 
   @override

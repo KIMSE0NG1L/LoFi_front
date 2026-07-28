@@ -224,56 +224,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.black.withOpacity(0.06),
-                                ),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(
-                                  '또는',
-                                  style: TextStyle(
-                                    color: AppColors.textFaint,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  color: Colors.black.withOpacity(0.06),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: () => context.go('/'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                side: BorderSide(
-                                  color: Colors.black.withOpacity(0.1),
-                                ),
-                              ),
-                              child: const Text(
-                                '게스트로 둘러보기',
-                                style: TextStyle(
-                                  color: AppColors.textDark,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
