@@ -20,10 +20,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.background,
       leading: showBack
           ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
               onPressed: () => Navigator.of(context).pop(),
             )
           : null,
@@ -31,7 +31,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       title: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.textDark,
           fontWeight: FontWeight.bold,
           fontSize: 20,
           letterSpacing: -0.5,
@@ -41,7 +41,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           (showMenu
               ? [
                   IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    icon: const Icon(Icons.more_vert, color: AppColors.textDark),
                     onPressed: onMenuTap,
                   ),
                 ]

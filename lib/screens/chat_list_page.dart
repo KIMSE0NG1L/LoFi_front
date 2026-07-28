@@ -125,7 +125,7 @@ class _ChatListPageState extends State<ChatListPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -133,15 +133,15 @@ class _ChatListPageState extends State<ChatListPage> {
             const Text(
               '채팅',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textDark,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
             ),
             Text(
               '${_threads.length}개',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
+              style: const TextStyle(
+                color: AppColors.textMuted,
                 fontSize: 12,
               ),
             ),

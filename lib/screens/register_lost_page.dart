@@ -38,9 +38,9 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
-        title: const Text('분실물 신고', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.background,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.textDark), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
+        title: const Text('분실물 신고', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
