@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -29,44 +31,61 @@ class _BottomNavState extends State<BottomNav> {
 
     return Stack(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
-            border: Border(top: BorderSide(color: Colors.black.withOpacity(0.06))),
+        if (_showRegisterSheet)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _hideRegister,
+              child: Container(color: Colors.black54),
+            ),
           ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 64,
-              child: Row(
-                children: [
-                  _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
-                  _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
-                  _CenterButton(onTap: _showRegister),
-                  _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
-                  _NavItem(
-                    icon: Icons.person_outline_rounded,
-                    label: 'MY',
-                    path: auth.isLoggedIn ? '/profile' : '/login',
-                    currentPath: location,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  height: 68,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.white.withOpacity(0.6)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
+                      _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
+                      _CenterButton(onTap: _showRegister),
+                      _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
+                      _NavItem(
+                        icon: Icons.person_outline_rounded,
+                        label: 'MY',
+                        path: auth.isLoggedIn ? '/profile' : '/login',
+                        currentPath: location,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        if (_showRegisterSheet) ...[
-          GestureDetector(
-            onTap: _hideRegister,
-            child: Container(color: Colors.black54),
-          ),
+        if (_showRegisterSheet)
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: _RegisterSheet(onClose: _hideRegister),
           ),
-        ],
       ],
     );
   }
@@ -99,22 +118,39 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isActive)
-              Container(
-                width: 20,
-                height: 3,
-                margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              )
-            else
-              const SizedBox(height: 7),
-            Icon(
-              icon,
-              size: 22,
-              color: isActive ? AppColors.primary : AppColors.textLight,
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedScale(
+                    scale: isActive ? 1 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: isActive ? AppColors.primary : AppColors.textLight,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 2),
             Text(
