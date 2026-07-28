@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/shop_service.dart';
 import '../theme/app_theme.dart';
 
@@ -16,7 +15,7 @@ class ShopPage extends StatefulWidget {
 }
 
 class _ShopPageState extends State<ShopPage> {
-  final ShopService _shopService = ShopService(ApiClient.instance);
+  final ShopService _shopService = ShopService();
 
   List<ShopItem> _items = [];
   String _activeCategory = '전체';

@@ -1,20 +1,24 @@
 import '../models/models.dart';
-import 'api_client.dart';
+import 'supabase_client.dart';
 
 class ShopService {
-  ShopService(this._api);
-
-  final ApiClient _api;
-
   Future<List<ShopItem>> fetchItems() async {
-    final data = await _api.get('/shop') as List<dynamic>;
-    return data
+    final data = await supabase.from('shop_items').select().gt('stock', 0);
+    return (data as List)
         .map((json) => _shopItemFromJson(json as Map<String, dynamic>))
         .toList();
   }
 
   Future<void> purchase(String shopItemId) async {
-    await _api.post('/shop/purchase', body: {'shopItemId': shopItemId});
+    try {
+      await supabase.rpc('purchase_shop_item', params: {'p_shop_item_id': shopItemId});
+    } catch (e) {
+      final message = e.toString();
+      if (message.contains('ITEM_NOT_FOUND')) throw const AppException('상품을 찾을 수 없습니다.');
+      if (message.contains('OUT_OF_STOCK')) throw const AppException('재고가 없습니다.');
+      if (message.contains('INSUFFICIENT_POINTS')) throw const AppException('포인트가 부족합니다.');
+      rethrow;
+    }
   }
 
   ShopItem _shopItemFromJson(Map<String, dynamic> json) {

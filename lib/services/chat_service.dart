@@ -1,23 +1,29 @@
 import '../models/models.dart';
-import 'api_client.dart';
+import 'supabase_client.dart';
+
+const _threadSelect = '''
+  id, created_at,
+  found_items(id, title, category),
+  user_a:profiles!chat_threads_user_a_id_fkey(id, name, avatar),
+  user_b:profiles!chat_threads_user_b_id_fkey(id, name, avatar),
+  chat_messages(id, text, is_appointment, appointment_data, created_at, sender_id, profiles(id, name, avatar))
+''';
 
 class ChatService {
-  ChatService(this._api);
-
-  final ApiClient _api;
-
   Future<List<ChatThread>> fetchThreads(String currentUserId) async {
-    final data = await _api.get('/chat') as List<dynamic>;
-    return data
-        .map(
-          (json) =>
-              _threadFromJson(json as Map<String, dynamic>, currentUserId),
-        )
+    final data = await supabase
+        .from('chat_threads')
+        .select(_threadSelect)
+        .or('user_a_id.eq.$currentUserId,user_b_id.eq.$currentUserId')
+        .order('created_at', ascending: false);
+
+    return (data as List)
+        .map((json) => _threadFromJson(json as Map<String, dynamic>, currentUserId))
         .toList();
   }
 
   Future<ChatThread> fetchThread(String id, String currentUserId) async {
-    final data = await _api.get('/chat/$id') as Map<String, dynamic>;
+    final data = await supabase.from('chat_threads').select(_threadSelect).eq('id', id).single();
     return _threadFromJson(data, currentUserId);
   }
 
@@ -26,12 +32,28 @@ class ChatService {
     required String otherUserId,
     required String currentUserId,
   }) async {
-    final data =
-        await _api.post(
-              '/chat',
-              body: {'foundItemId': foundItemId, 'otherUserId': otherUserId},
-            )
-            as Map<String, dynamic>;
+    final existing = await supabase
+        .from('chat_threads')
+        .select(_threadSelect)
+        .eq('item_id', foundItemId)
+        .or(
+          'and(user_a_id.eq.$currentUserId,user_b_id.eq.$otherUserId),'
+          'and(user_a_id.eq.$otherUserId,user_b_id.eq.$currentUserId)',
+        )
+        .maybeSingle();
+
+    if (existing != null) return _threadFromJson(existing, currentUserId);
+
+    final data = await supabase
+        .from('chat_threads')
+        .insert({
+          'item_id': foundItemId,
+          'user_a_id': currentUserId,
+          'user_b_id': otherUserId,
+        })
+        .select(_threadSelect)
+        .single();
+
     return _threadFromJson(data, currentUserId);
   }
 
@@ -42,21 +64,23 @@ class ChatService {
     bool isAppointment = false,
     AppointmentData? appointmentData,
   }) async {
-    final data =
-        await _api.post(
-              '/chat/$threadId/messages',
-              body: {
-                'text': text,
-                'isAppointment': isAppointment,
-                if (appointmentData != null)
-                  'appointmentData': {
-                    'location': appointmentData.location,
-                    'date': appointmentData.date,
-                    'time': appointmentData.time,
-                  },
-              },
-            )
-            as Map<String, dynamic>;
+    final data = await supabase
+        .from('chat_messages')
+        .insert({
+          'thread_id': threadId,
+          'sender_id': currentUserId,
+          'text': text,
+          'is_appointment': isAppointment,
+          'appointment_data': appointmentData == null
+              ? null
+              : {
+                  'location': appointmentData.location,
+                  'date': appointmentData.date,
+                  'time': appointmentData.time,
+                },
+        })
+        .select('*, profiles(id, name, avatar)')
+        .single();
 
     return _messageFromJson(data, currentUserId);
   }

@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
 
@@ -17,7 +16,7 @@ class ChatListPage extends StatefulWidget {
 }
 
 class _ChatListPageState extends State<ChatListPage> {
-  final ChatService _chatService = ChatService(ApiClient.instance);
+  final ChatService _chatService = ChatService();
 
   List<ChatThread> _threads = [];
   bool _loading = true;

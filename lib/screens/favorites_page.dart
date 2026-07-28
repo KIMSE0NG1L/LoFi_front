@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/items_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/quiz_modal.dart';
@@ -17,7 +16,7 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService();
 
   List<LostItem> _items = [];
   bool _loading = true;

@@ -1,7 +1,7 @@
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/models.dart';
-import 'api_client.dart';
+import 'supabase_client.dart';
 
 class ItemsResult {
   final List<LostItem> items;
@@ -17,34 +17,42 @@ class ItemsResult {
   });
 }
 
+const _foundItemSelect = '*, profiles(id, name, avatar), quizzes(id, question, type, options)';
+
 class ItemsService {
-  ItemsService(this._api);
-
-  final ApiClient _api;
-
   Future<ItemsResult> fetchItems({
     String? category,
     String? search,
     int page = 1,
     int limit = 20,
   }) async {
-    final query = <String, String>{
-      'page': '$page',
-      'limit': '$limit',
-      if (category != null && category.isNotEmpty) 'category': category,
-      if (search != null && search.isNotEmpty) 'search': search,
-    };
+    final offset = (page - 1) * limit;
 
-    final data = await _api.get('/items', query: query) as Map<String, dynamic>;
-    final rawItems = data['items'] as List<dynamic>? ?? [];
+    var query = supabase
+        .from('found_items')
+        .select(_foundItemSelect)
+        .eq('status', 'available');
+
+    if (category != null && category.isNotEmpty) {
+      query = query.eq('category', category);
+    }
+    if (search != null && search.isNotEmpty) {
+      query = query.ilike('title', '%$search%');
+    }
+
+    final res = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1)
+        .count(CountOption.exact);
+
+    final rawItems = res.data;
+    final total = res.count;
 
     return ItemsResult(
-      items: rawItems
-          .map((json) => _lostItemFromJson(json as Map<String, dynamic>))
-          .toList(),
-      total: data['total'] as int? ?? rawItems.length,
-      page: data['page'] as int? ?? page,
-      totalPages: data['totalPages'] as int? ?? 1,
+      items: rawItems.map(_lostItemFromJson).toList(),
+      total: total,
+      page: page,
+      totalPages: (total / limit).ceil().clamp(1, 1 << 30),
     );
   }
 
@@ -54,23 +62,43 @@ class ItemsService {
   }
 
   Future<List<LostItem>> fetchMine() async {
-    final data = await _api.get('/items/mine') as List<dynamic>;
-    return data
-        .map((json) => _lostItemFromJson(json as Map<String, dynamic>))
-        .toList();
+    final uid = _requireUid();
+    final data = await supabase
+        .from('found_items')
+        .select(_foundItemSelect)
+        .eq('finder_id', uid)
+        .order('created_at', ascending: false);
+    return (data as List).map((json) => _lostItemFromJson(json as Map<String, dynamic>)).toList();
   }
 
   Future<List<LostItem>> fetchFavorites() async {
-    final data = await _api.get('/items/favorites/mine') as List<dynamic>;
-    return data
-        .map((json) => _lostItemFromJson(json as Map<String, dynamic>))
+    final uid = _requireUid();
+    final data = await supabase
+        .from('favorites')
+        .select('found_items($_foundItemSelect)')
+        .eq('user_id', uid)
+        .order('created_at', ascending: false);
+    return (data as List)
+        .map((row) => _lostItemFromJson((row as Map<String, dynamic>)['found_items'] as Map<String, dynamic>))
         .toList();
   }
 
   Future<bool> toggleFavorite(String itemId) async {
-    final data =
-        await _api.post('/items/$itemId/favorites') as Map<String, dynamic>;
-    return data['favorited'] == true;
+    final uid = _requireUid();
+    final existing = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('found_item_id', itemId)
+        .maybeSingle();
+
+    if (existing != null) {
+      await supabase.from('favorites').delete().eq('id', existing['id'] as String);
+      return false;
+    }
+
+    await supabase.from('favorites').insert({'user_id': uid, 'found_item_id': itemId});
+    return true;
   }
 
   Future<LostItem> createFoundItem({
@@ -83,21 +111,16 @@ class ItemsService {
     double mapY = 0,
     String? imageUrl,
   }) async {
-    final data =
-        await _api.post(
-              '/items',
-              body: {
-                'category': category,
-                'title': title,
-                'description': description,
-                'location': location,
-                'mapX': mapX,
-                'mapY': mapY,
-                'quizzes': _encodeQuizzes(quizzes),
-                if (imageUrl != null) 'imageUrl': imageUrl,
-              },
-            )
-            as Map<String, dynamic>;
+    final data = await supabase.rpc('create_found_item', params: {
+      'p_category': category,
+      'p_title': title,
+      'p_description': description,
+      'p_location': location,
+      'p_map_x': mapX,
+      'p_map_y': mapY,
+      'p_image_url': imageUrl,
+      'p_quizzes': _normalizeQuizzes(quizzes),
+    }) as Map<String, dynamic>;
 
     return _lostItemFromJson(data);
   }
@@ -113,27 +136,46 @@ class ItemsService {
     double mapY = 0,
     String? imageUrl,
   }) async {
-    final data =
-        await _api.patch(
-              '/items/$id',
-              body: {
-                'category': category,
-                'title': title,
-                'description': description,
-                'location': location,
-                'mapX': mapX,
-                'mapY': mapY,
-                'quizzes': _encodeQuizzes(quizzes),
-                if (imageUrl != null) 'imageUrl': imageUrl,
-              },
-            )
-            as Map<String, dynamic>;
+    final uid = _requireUid();
+    final owned = await supabase.from('found_items').select('finder_id').eq('id', id).maybeSingle();
+    if (owned == null) throw const AppException('아이템을 찾을 수 없습니다.');
+    if (owned['finder_id'] != uid) throw const AppException('권한이 없습니다.');
 
-    return _lostItemFromJson(data);
+    await supabase.from('found_items').update({
+      'category': category,
+      'title': title,
+      'description': description,
+      'location': location,
+      'map_x': mapX,
+      'map_y': mapY,
+      if (imageUrl != null) 'image_url': imageUrl,
+    }).eq('id', id);
+
+    await supabase.from('quizzes').delete().eq('found_item_id', id);
+    await supabase.from('quizzes').insert(
+      _normalizeQuizzes(quizzes)
+          .map((q) => {
+                'found_item_id': id,
+                'question': q['question'],
+                'type': q['type'],
+                'options': q['options'],
+                'correct_answer': q['correctAnswer'],
+              })
+          .toList(),
+    );
+
+    final refreshed = await supabase.from('found_items').select(_foundItemSelect).eq('id', id).single();
+    return _lostItemFromJson(refreshed);
   }
 
-  String _encodeQuizzes(List<Map<String, dynamic>> quizzes) {
-    final normalized = quizzes
+  /// 수정화면 프리필용 — 본인 아이템의 퀴즈를 정답 포함으로 조회
+  Future<List<Quiz>> fetchMyItemQuizzesWithAnswers(String foundItemId) async {
+    final data = await supabase.rpc('get_my_item_quizzes', params: {'p_found_item_id': foundItemId});
+    return _quizzesFromJson(data);
+  }
+
+  List<Map<String, dynamic>> _normalizeQuizzes(List<Map<String, dynamic>> quizzes) {
+    return quizzes
         .map(
           (quiz) => {
             'question': quiz['question'],
@@ -143,7 +185,12 @@ class ItemsService {
           },
         )
         .toList();
-    return jsonEncode(normalized);
+  }
+
+  String _requireUid() {
+    final uid = currentUserId;
+    if (uid == null) throw const AppException('로그인이 필요합니다.');
+    return uid;
   }
 
   LostItem _lostItemFromJson(Map<String, dynamic> json) {

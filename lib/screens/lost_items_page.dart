@@ -5,7 +5,6 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/items_service.dart';
 import '../widgets/quiz_modal.dart';
 
@@ -17,7 +16,7 @@ class LostItemsPage extends StatefulWidget {
 }
 
 class _LostItemsPageState extends State<LostItemsPage> {
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService();
 
   String _selectedCategory = '';
   String _selectedLocation = '';

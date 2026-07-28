@@ -1,13 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
-import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/items_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService(ApiClient.instance);
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final AuthService _authService = AuthService();
+  final ItemsService _itemsService = ItemsService();
 
   AppUser? _user;
   List<String> _favorites = [];

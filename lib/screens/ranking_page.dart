@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
-import '../services/api_client.dart';
 import '../services/ranking_service.dart';
 import '../theme/app_theme.dart';
 
@@ -14,7 +13,7 @@ class RankingPage extends StatefulWidget {
 }
 
 class _RankingPageState extends State<RankingPage> {
-  final RankingService _rankingService = RankingService(ApiClient.instance);
+  final RankingService _rankingService = RankingService();
 
   List<AngelUser> _users = [];
   bool _loading = true;

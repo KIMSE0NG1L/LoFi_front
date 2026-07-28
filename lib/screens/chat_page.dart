@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
 
@@ -17,7 +16,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final ChatService _chatService = ChatService(ApiClient.instance);
+  final ChatService _chatService = ChatService();
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final _apptLocationCtrl = TextEditingController();

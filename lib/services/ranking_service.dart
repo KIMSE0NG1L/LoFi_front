@@ -1,15 +1,15 @@
 import '../models/models.dart';
-import 'api_client.dart';
+import 'supabase_client.dart';
 
 class RankingService {
-  RankingService(this._api);
-
-  final ApiClient _api;
-
   Future<List<AngelUser>> fetchRankings({int limit = 20}) async {
-    final data =
-        await _api.get('/ranking', query: {'limit': '$limit'}) as List<dynamic>;
-    return data
+    final data = await supabase
+        .from('profiles')
+        .select('id, name, avatar, points, items_found')
+        .order('points', ascending: false)
+        .limit(limit);
+
+    return (data as List)
         .map((json) => _angelUserFromJson(json as Map<String, dynamic>))
         .toList();
   }

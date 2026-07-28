@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/models.dart';
-import '../services/api_client.dart';
 import '../services/activity_service.dart';
 import '../services/items_service.dart';
 
@@ -17,8 +16,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
-  final ActivityService _activityService = ActivityService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService();
+  final ActivityService _activityService = ActivityService();
 
   List<ActivityItem> _recentActivities = [];
   bool _recentLoading = true;

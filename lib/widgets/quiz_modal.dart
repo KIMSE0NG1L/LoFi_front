@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/chat_service.dart';
+import '../services/supabase_client.dart';
 import '../theme/app_theme.dart';
 
 class QuizModal extends StatefulWidget {
@@ -17,7 +17,7 @@ class QuizModal extends StatefulWidget {
 }
 
 class _QuizModalState extends State<QuizModal> {
-  final ChatService _chatService = ChatService(ApiClient.instance);
+  final ChatService _chatService = ChatService();
   String _step = 'intro'; // intro | quiz | success | failed
   Quiz? _currentQuiz;
   int? _currentQuizIndex;
@@ -119,14 +119,10 @@ class _QuizModalState extends State<QuizModal> {
     _usedQuizzes.add(_currentQuizIndex!);
 
     try {
-      final data = await ApiClient.instance.post(
-        '/quiz/attempt',
-        body: {
-          'foundItemId': widget.item.id,
-          'quizId': quizId,
-          'answer': answer,
-        },
-      ) as Map<String, dynamic>;
+      final data = await supabase.rpc('submit_quiz_answer', params: {
+        'p_quiz_id': quizId,
+        'p_answer': '$answer',
+      }) as Map<String, dynamic>;
 
       if (!mounted) return;
       final isCorrect = data['correct'] == true;

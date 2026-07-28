@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/activity_service.dart';
 import '../services/items_service.dart';
+import '../services/storage_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -19,8 +19,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
-  final ActivityService _activityService = ActivityService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService();
+  final ActivityService _activityService = ActivityService();
 
   String _activeTab = 'items';
   bool _notifEnabled = true;
@@ -214,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
               try {
                 String? imageUrl = currentImageUrl;
                 if (editImageFile != null) {
-                  imageUrl = await ApiClient.instance.uploadImage(editImageFile!);
+                  imageUrl = await uploadItemImage(editImageFile!);
                 }
                 final result = await _itemsService.updateFoundItem(
                   id: item.id,

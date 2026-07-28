@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
-import '../services/api_client.dart';
 import '../services/items_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 
 class RegisterFoundPage extends StatefulWidget {
@@ -18,7 +18,7 @@ class RegisterFoundPage extends StatefulWidget {
 }
 
 class _RegisterFoundPageState extends State<RegisterFoundPage> {
-  final ItemsService _itemsService = ItemsService(ApiClient.instance);
+  final ItemsService _itemsService = ItemsService();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
@@ -86,7 +86,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     try {
       String? imageUrl;
       if (_imageFile != null) {
-        imageUrl = await ApiClient.instance.uploadImage(_imageFile!);
+        imageUrl = await uploadItemImage(_imageFile!);
       }
 
       await _itemsService.createFoundItem(

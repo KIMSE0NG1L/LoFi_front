@@ -1,25 +1,25 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/models.dart';
-import 'api_client.dart';
+import 'supabase_client.dart';
 
 class AuthService {
-  AuthService(this._api);
-
-  final ApiClient _api;
-
   Future<AppUser> login({
     required String email,
     required String password,
   }) async {
-    final data =
-        await _api.post(
-              '/auth/login',
-              body: {'email': email, 'password': password},
-            )
-            as Map<String, dynamic>;
-
-    await _api.saveToken(data['token'] as String);
-    await _api.saveEmail(email);
-    return _userFromJson(data['user'] as Map<String, dynamic>, email);
+    try {
+      final res = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      if (res.user == null) {
+        throw const AppException('이메일 또는 비밀번호가 올바르지 않습니다.');
+      }
+      return _fetchProfile(res.user!.id, email);
+    } on AuthException catch (_) {
+      throw const AppException('이메일 또는 비밀번호가 올바르지 않습니다.');
+    }
   }
 
   Future<AppUser> signup({
@@ -28,47 +28,56 @@ class AuthService {
     required String password,
     String phone = '',
   }) async {
-    final data =
-        await _api.post(
-              '/auth/signup',
-              body: {
-                'name': name,
-                'email': email,
-                'password': password,
-                'phone': phone,
-              },
-            )
-            as Map<String, dynamic>;
+    try {
+      final res = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'name': name},
+      );
+      final user = res.user;
+      if (user == null) {
+        throw const AppException('회원가입에 실패했습니다.');
+      }
+      if (res.session == null) {
+        // Supabase 프로젝트의 Auth > Confirm email 설정이 켜져 있으면
+        // 세션 없이 확인 메일 발송만 되고 즉시 로그인되지 않습니다.
+        throw const AppException('이메일 인증이 필요합니다. 메일함을 확인해주세요.');
+      }
 
-    await _api.saveToken(data['token'] as String);
-    await _api.saveEmail(email);
-    return _userFromJson(data['user'] as Map<String, dynamic>, email);
+      if (phone.isNotEmpty) {
+        await supabase.from('profiles').update({'phone': phone}).eq('id', user.id);
+      }
+
+      return _fetchProfile(user.id, email);
+    } on AuthException catch (e) {
+      final status = e.message.toLowerCase().contains('already') ? '이미 가입된 이메일입니다.' : e.message;
+      throw AppException(status);
+    }
   }
 
   Future<void> logout() async {
-    await _api.clearToken();
-    await _api.clearEmail();
+    await supabase.auth.signOut();
   }
 
   Future<AppUser?> restoreSession() async {
-    final token = await _api.token;
-    final email = await _api.savedEmail;
-    if (token == null || token.isEmpty || email == null || email.isEmpty) {
-      return null;
-    }
+    final user = supabase.auth.currentUser;
+    if (user == null || user.email == null) return null;
     try {
-      final data = await _api.get('/users/me') as Map<String, dynamic>;
-      return _userFromJson(data, email);
+      return await _fetchProfile(user.id, user.email!);
     } catch (_) {
-      await _api.clearToken();
-      await _api.clearEmail();
       return null;
     }
   }
 
   Future<AppUser> me({required String email}) async {
-    final data = await _api.get('/users/me') as Map<String, dynamic>;
-    return _userFromJson(data, email);
+    final uid = currentUserId;
+    if (uid == null) throw const AppException('로그인이 필요합니다.');
+    return _fetchProfile(uid, email);
+  }
+
+  Future<AppUser> _fetchProfile(String id, String email) async {
+    final json = await supabase.from('profiles').select().eq('id', id).single();
+    return _userFromJson(json, email);
   }
 
   AppUser _userFromJson(Map<String, dynamic> json, String email) {
