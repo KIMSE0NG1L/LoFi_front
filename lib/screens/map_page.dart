@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
+import '../data/mock_data.dart' show categoryEmoji, categoryColors;
 import '../models/models.dart';
+import '../services/items_service.dart';
 import '../widgets/quiz_modal.dart';
+import '../widgets/surfaces.dart';
+
+// CartoDB Positron — 라벨이 정갈하고 배경이 밝아 애플 지도와 톤이 비슷한
+// 오픈소스(OpenStreetMap 기반) 무료 타일. API 키 불필요.
+const _tileUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const _tileSubdomains = ['a', 'b', 'c', 'd'];
+
+const _seoulCenter = LatLng(37.5665, 126.9780);
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -13,129 +25,224 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  final MapController _mapController = MapController();
+  final ItemsService _itemsService = ItemsService();
+
   LostItem? _activeItem;
   String _activeFilter = 'all';
-  String _searchType = 'location';
   String _searchQuery = '';
+  LatLng? _myLocation;
 
-  List<LostItem> get _filtered => mockLostItems.where((item) {
-    if (_activeFilter != 'all' && item.category != _activeFilter) return false;
-    if (_searchQuery.trim().isNotEmpty) {
-      if (_searchType == 'location') {
-        return item.location.toLowerCase().contains(_searchQuery.toLowerCase());
-      } else {
-        return item.title.toLowerCase().contains(_searchQuery.toLowerCase());
-      }
-    }
-    return true;
-  }).toList();
+  List<LostItem> _items = [];
+  bool _loading = true;
+  String? _error;
+
+  List<LostItem> get _filtered {
+    if (_searchQuery.trim().isEmpty) return _items;
+    final q = _searchQuery.toLowerCase();
+    return _items.where((item) => item.location.toLowerCase().contains(q)).toList();
+  }
 
   final _filters = [
-    {'id': 'all', 'label': '전체', 'emoji': '🗺️'},
-    {'id': 'electronics', 'label': '전자기기', 'emoji': '📱'},
-    {'id': 'wallet', 'label': '지갑', 'emoji': '👛'},
-    {'id': 'clothing', 'label': '의류', 'emoji': '👔'},
-    {'id': 'accessories', 'label': '액세서리', 'emoji': '⌚'},
+    {'id': 'all', 'label': '전체', 'icon': Icons.map_outlined},
+    {'id': 'electronics', 'label': '전자기기', 'icon': Icons.smartphone_outlined},
+    {'id': 'wallet', 'label': '지갑', 'icon': Icons.account_balance_wallet_outlined},
+    {'id': 'clothing', 'label': '의류', 'icon': Icons.checkroom_outlined},
+    {'id': 'accessories', 'label': '액세서리', 'icon': Icons.watch_outlined},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveMyLocation();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await _itemsService.fetchItems(
+        category: _activeFilter == 'all' ? null : _activeFilter,
+        limit: 100,
+      );
+      if (!mounted) return;
+      setState(() => _items = result.items);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // 습득물 등록 시 지도 위치를 아직 입력받지 않아 mapPos가 항상 (0,0)이라,
+  // 핀이 한 점에 겹치지 않도록 아이템 id로 안정적인 위치를 흩뿌려 배치.
+  // 할것.txt "지도 리얼데이터" 항목에서 실제 좌표로 교체 예정.
+  LatLng _toLatLng(MapPos pos, String id) {
+    const latMax = 37.70, latMin = 37.42;
+    const lngMin = 126.76, lngMax = 127.18;
+    double x = pos.x, y = pos.y;
+    if (x == 0 && y == 0) {
+      final h = id.hashCode;
+      x = (h % 80 + 10).toDouble();
+      y = ((h ~/ 80) % 80 + 10).toDouble();
+    }
+    return LatLng(
+      latMax - (y / 100) * (latMax - latMin),
+      lngMin + (x / 100) * (lngMax - lngMin),
+    );
+  }
+
+  Future<void> _resolveMyLocation() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      setState(() => _myLocation = LatLng(pos.latitude, pos.longitude));
+      _mapController.move(_myLocation!, 14);
+    } catch (_) {
+      // 위치를 가져오지 못하면 서울 기본 좌표로 유지
+    }
+  }
+
+  void _goToMyLocation() {
+    if (_myLocation != null) {
+      _mapController.move(_myLocation!, 15);
+    } else {
+      _resolveMyLocation();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.textDark), onPressed: () => context.canPop() ? context.pop() : context.go('/')),
-        title: const Text('지도로 찾기', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 17)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+        ),
+        title: const Text(
+          '지도로 찾기',
+          style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 17),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.navigation_outlined, color: Colors.white38, size: 14),
-                const SizedBox(width: 4),
-                const Text('서울', style: TextStyle(color: Colors.white38, fontSize: 12)),
-              ],
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: neumorphicDecoration(radius: 12),
+              child: const Icon(Icons.tune_rounded, color: AppColors.textDark, size: 18),
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
+        automaticallyImplyLeading: false,
+      ),
+      body: Column(
+        children: [
+          // 검색 영역
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: neumorphicDecoration(radius: 14),
                   child: DropdownButton<String>(
-                    value: _searchType,
+                    value: _activeFilter,
                     isDense: true,
-                    dropdownColor: const Color(0xFF1A1A1A),
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
                     underline: const SizedBox(),
-                    items: const [
-                      DropdownMenuItem(value: 'location', child: Text('위치')),
-                      DropdownMenuItem(value: 'item', child: Text('물품명')),
-                    ],
-                    onChanged: (v) => setState(() => _searchType = v!),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted, size: 18),
+                    style: const TextStyle(color: AppColors.textDark, fontSize: 13, fontWeight: FontWeight.w500),
+                    items: _filters
+                        .map((f) => DropdownMenuItem(
+                              value: f['id'] as String,
+                              child: Text(f['label'] as String),
+                            ))
+                        .toList(),
+                    onChanged: (v) {
+                      setState(() => _activeFilter = v!);
+                      _loadItems();
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: TextField(
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    decoration: InputDecoration(
-                      hintText: _searchType == 'location' ? '위치 검색...' : '물품명 검색...',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12),
-                      prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.4), size: 16),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.1),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withOpacity(0.4))),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: neumorphicDecoration(radius: 14),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      style: const TextStyle(color: AppColors.textDark, fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: '위치 검색',
+                        hintStyle: TextStyle(color: AppColors.textFaint, fontSize: 13),
+                        prefixIcon: Icon(Icons.search_rounded, color: AppColors.textFaint, size: 18),
+                        border: InputBorder.none,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        automaticallyImplyLeading: false,
-      ),
-      body: Column(
-        children: [
-          // Filter chips
+          // 카테고리 필터 칩
           SizedBox(
-            height: 48,
+            height: 40,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _filters.length,
               itemBuilder: (_, i) {
                 final f = _filters[i];
                 final active = _activeFilter == f['id'];
                 return GestureDetector(
-                  onTap: () => setState(() => _activeFilter = f['id']!),
+                  onTap: () {
+                    setState(() => _activeFilter = f['id'] as String);
+                    _loadItems();
+                  },
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: active ? Colors.white : Colors.white.withOpacity(0.1),
+                      color: active ? const Color(0xFFE8EEFC) : Colors.white,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: active ? AppColors.interactive : Colors.black.withOpacity(0.05),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Text(f['emoji']!, style: const TextStyle(fontSize: 14)),
-                        const SizedBox(width: 4),
-                        Text(f['label']!, style: TextStyle(color: active ? AppColors.primary : Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w500)),
+                        Icon(
+                          f['icon'] as IconData,
+                          size: 15,
+                          color: active ? AppColors.interactive : AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          f['label'] as String,
+                          style: TextStyle(
+                            color: active ? AppColors.interactive : AppColors.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -143,136 +250,269 @@ class _MapPageState extends State<MapPage> {
               },
             ),
           ),
-          // Map
+          const SizedBox(height: 12),
+          // 지도
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LayoutBuilder(builder: (ctx, constraints) {
-              final w = constraints.maxWidth;
-              const h = 300.0;
-              return Container(
-                width: w, height: h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
-                  ),
-                ),
-                clipBehavior: Clip.hardEdge,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                height: 300,
                 child: Stack(
                   children: [
-                    // Grid
-                    ...([20, 40, 60, 80].expand((p) => [
-                      Positioned(left: w * p / 100, top: 0, bottom: 0, child: Container(width: 1, color: Colors.white.withOpacity(0.04))),
-                      Positioned(top: h * p / 100, left: 0, right: 0, child: Container(height: 1, color: Colors.white.withOpacity(0.04))),
-                    ])),
-                    // Han river
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: _myLocation ?? _seoulCenter,
+                        initialZoom: 12,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: _tileUrl,
+                          subdomains: _tileSubdomains,
+                          userAgentPackageName: 'com.guhaejo.app',
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            if (_myLocation != null)
+                              Marker(
+                                point: _myLocation!,
+                                width: 40,
+                                height: 40,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.interactive.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.interactive,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ...filtered.map((item) {
+                              final color = Color(categoryColors[item.category] ?? 0xFF5B9BF2);
+                              final emoji = categoryEmoji[item.category] ?? '📦';
+                              final isActive = _activeItem?.id == item.id;
+                              return Marker(
+                                point: _toLatLng(item.mapPos, item.id),
+                                width: 40,
+                                height: 46,
+                                alignment: Alignment.topCenter,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _activeItem = isActive ? null : item),
+                                  child: Column(
+                                    children: [
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: color,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: Colors.white, width: 2),
+                                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2))],
+                                            ),
+                                            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 16))),
+                                          ),
+                                          if (isActive)
+                                            Positioned(
+                                              top: -2,
+                                              right: -2,
+                                              child: Container(
+                                                width: 12,
+                                                height: 12,
+                                                decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: color, width: 2)),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      CustomPaint(painter: _TrianglePainter(color), size: const Size(10, 7)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                        const SimpleAttributionWidget(
+                          source: Text('© OpenStreetMap contributors © CARTO'),
+                        ),
+                      ],
+                    ),
+                    // 등록 개수 배지
                     Positioned(
-                      left: w * 0.12, top: h * 0.46,
-                      width: w * 0.76, height: h * 0.07,
+                      top: 12,
+                      right: 12,
                       child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Colors.transparent, Color(0xFF2563EB), Colors.transparent]),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
+                        ),
+                        child: Text(
+                          '${filtered.length}개 등록',
+                          style: const TextStyle(color: AppColors.textDark, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
+                    // 내 위치로 이동 버튼
                     Positioned(
-                      left: w * 0.18, top: h * 0.475,
-                      child: Text('— 한 강 —', style: TextStyle(fontSize: 8, color: Colors.blue.shade200.withOpacity(0.5), letterSpacing: 2, fontWeight: FontWeight.w500)),
-                    ),
-                    // Districts
-                    ...districts.map((d) => Positioned(
-                      left: w * (d['x'] as double) / 100 - 16,
-                      top: h * (d['y'] as double) / 100 - 8,
-                      child: Text(d['name'] as String, style: TextStyle(fontSize: 8, color: Colors.white.withOpacity(0.2), fontWeight: FontWeight.w500)),
-                    )),
-                    // Item pins
-                    ...filtered.map((item) {
-                      final color = Color(categoryColors[item.category] ?? 0xFF0D0D0D);
-                      final emoji = categoryEmoji[item.category] ?? '📦';
-                      final isActive = _activeItem?.id == item.id;
-                      return Positioned(
-                        left: w * item.mapPos.x / 100 - 18,
-                        top: h * item.mapPos.y / 100 - 36,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _activeItem = isActive ? null : item),
-                          child: Column(
-                            children: [
-                              Stack(
-                                children: [
-                                  Container(
-                                    width: 36, height: 36,
-                                    decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
-                                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)]),
-                                    child: Center(child: Text(emoji, style: const TextStyle(fontSize: 16))),
-                                  ),
-                                  if (isActive)
-                                    Positioned(top: -2, right: -2, child: Container(width: 12, height: 12, decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: color, width: 2)))),
-                                ],
-                              ),
-                              CustomPaint(painter: _TrianglePainter(color), size: const Size(10, 7)),
-                            ],
+                      bottom: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: _goToMyLocation,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
                           ),
+                          child: const Icon(Icons.my_location_rounded, color: AppColors.interactive, size: 18),
                         ),
-                      );
-                    }),
-                    // Count badge
-                    Positioned(
-                      top: 12, right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(20)),
-                        child: Text('${filtered.length}개 등록', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
-          // Active item or hint
+          // 안내 문구 또는 선택된 아이템
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: _activeItem != null
                 ? _activeItemCard(_activeItem!)
-                : const Center(child: Text('핀을 탭하면 상세 정보를 볼 수 있어요', style: TextStyle(color: Colors.white30, fontSize: 12))),
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.textFaint),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '핀을 탭하면 상세 정보를 볼 수 있어요',
+                        style: TextStyle(color: AppColors.textFaint, fontSize: 12),
+                      ),
+                    ],
+                  ),
           ),
           const SizedBox(height: 12),
-          // List
+          // 목록 헤더
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Align(alignment: Alignment.centerLeft, child: Text('전체 목록', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.5))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '전체 목록',
+                  style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                Row(
+                  children: [
+                    const Text('최신순', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                    const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted, size: 16),
+                  ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(height: 8),
+          // 목록
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.interactive))
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                            const SizedBox(height: 8),
+                            OutlinedButton(onPressed: _loadItems, child: const Text('다시 시도')),
+                          ],
+                        ),
+                      )
+                    : filtered.isEmpty
+                        ? const Center(
+                            child: Text('등록된 습득물이 없습니다.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                          )
+                        : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               itemCount: filtered.length,
               itemBuilder: (_, i) {
                 final item = filtered[i];
                 final isActive = _activeItem?.id == item.id;
                 return GestureDetector(
-                  onTap: () => setState(() => _activeItem = item),
+                  onTap: () {
+                    setState(() => _activeItem = item);
+                    _mapController.move(_toLatLng(item.mapPos, item.id), 15);
+                  },
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isActive ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(14),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isActive ? AppColors.interactive : Colors.black.withOpacity(0.05),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Text(categoryEmoji[item.category] ?? '📦', style: const TextStyle(fontSize: 20)),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: item.imageUrl != null
+                              ? Image.network(item.imageUrl!, width: 52, height: 52, fit: BoxFit.cover)
+                              : Container(
+                                  width: 52,
+                                  height: 52,
+                                  color: AppColors.subtle,
+                                  child: Center(child: Text(categoryEmoji[item.category] ?? '📦', style: const TextStyle(fontSize: 22))),
+                                ),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(item.title, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
-                            Text('📍 ${item.location}', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
-                          ]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                style: const TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on, size: 12, color: AppColors.interactive),
+                                  const SizedBox(width: 2),
+                                  Expanded(
+                                    child: Text(
+                                      item.location,
+                                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        Text(_fmtDate(item.createdAt), style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                        Text(_fmtDate(item.createdAt), style: const TextStyle(color: AppColors.textFaint, fontSize: 11)),
+                        const Icon(Icons.chevron_right, color: AppColors.textFaint, size: 18),
                       ],
                     ),
                   ),
@@ -287,11 +527,7 @@ class _MapPageState extends State<MapPage> {
 
   Widget _activeItemCard(LostItem item) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-      ),
+      decoration: neumorphicDecoration(radius: 18),
       clipBehavior: Clip.hardEdge,
       child: Column(
         children: [
@@ -307,7 +543,7 @@ class _MapPageState extends State<MapPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.primary), overflow: TextOverflow.ellipsis),
+                    Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textDark), overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
                     Text(item.description, style: const TextStyle(color: AppColors.textMuted, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 6),
@@ -321,15 +557,11 @@ class _MapPageState extends State<MapPage> {
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => QuizModal(item: item))),
             child: Container(
               width: double.infinity,
-              color: AppColors.primary,
+              color: AppColors.interactive,
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Center(child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('퀴즈 풀고 찾기 ', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                  Image.asset('assets/app_logo_T_white_N.png', width: 20, height: 20),
-                ],
-              )),
+              child: const Center(
+                child: Text('퀴즈 풀고 찾기', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
             ),
           ),
         ],

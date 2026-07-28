@@ -178,11 +178,11 @@ const Map<String, String> categoryEmoji = {
 };
 
 const Map<String, int> categoryColors = {
-  'electronics': 0xFF0D0D0D,
-  'wallet': 0xFF5B4A3A,
-  'clothing': 0xFF2D4A2D,
-  'accessories': 0xFF4A2D4A,
-  'etc': 0xFF3A3A5A,
+  'electronics': 0xFF5B9BF2,
+  'wallet': 0xFFF28BAA,
+  'clothing': 0xFF8FC7EF,
+  'accessories': 0xFFAE8FE8,
+  'etc': 0xFFE8C48A,
 };
 
 const List<Map<String, dynamic>> districts = [

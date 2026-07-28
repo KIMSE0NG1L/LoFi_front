@@ -18,6 +18,9 @@ dependencies:
   intl: ^0.19.0
   image_picker: ^1.1.2
   supabase_flutter: ^2.8.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.1
 
 dev_dependencies:
   flutter_test:
@@ -41,3 +44,12 @@ flutter:
     - assets/app_logo_T.png
     - assets/app_logo_f.png
     - assets/app_logo_T_white_N.png
+    - assets/상단배경.png
+    - assets/지도.png
+    - assets/찾아주세요.png
+    - assets/습득물등록.png
+    - assets/남성.png
+    - assets/여성.png
+    - assets/돋보기.png
+    - assets/즐겨찾기.png
+    - assets/채팅.png
