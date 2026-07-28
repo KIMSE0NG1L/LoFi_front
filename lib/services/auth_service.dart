@@ -27,12 +27,13 @@ class AuthService {
     required String email,
     required String password,
     String phone = '',
+    String gender = 'male',
   }) async {
     try {
       final res = await supabase.auth.signUp(
         email: email,
         password: password,
-        data: {'name': name},
+        data: {'name': name, 'gender': gender},
       );
       final user = res.user;
       if (user == null) {
@@ -89,6 +90,7 @@ class AuthService {
       points: json['points'] as int? ?? 0,
       itemsFound: json['items_found'] as int? ?? 0,
       avatar: json['avatar'] as String? ?? '',
+      gender: json['gender'] as String? ?? 'male',
     );
   }
 }

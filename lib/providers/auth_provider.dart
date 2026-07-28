@@ -34,12 +34,14 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     String phone = '',
+    String gender = 'male',
   }) async {
     _user = await _authService.signup(
       name: name,
       email: email,
       password: password,
       phone: phone,
+      gender: gender,
     );
     await loadFavorites();
     notifyListeners();

@@ -190,6 +190,7 @@ class AppUser {
   final int points;
   final int itemsFound;
   final String avatar;
+  final String gender;
 
   const AppUser({
     required this.id,
@@ -199,7 +200,11 @@ class AppUser {
     required this.points,
     required this.itemsFound,
     required this.avatar,
+    this.gender = 'male',
   });
+
+  String get genderAvatarAsset =>
+      gender == 'female' ? 'assets/여성.png' : 'assets/남성.png';
 
   AppUser copyWith({
     String? id,
@@ -209,6 +214,7 @@ class AppUser {
     int? points,
     int? itemsFound,
     String? avatar,
+    String? gender,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -218,6 +224,7 @@ class AppUser {
       points: points ?? this.points,
       itemsFound: itemsFound ?? this.itemsFound,
       avatar: avatar ?? this.avatar,
+      gender: gender ?? this.gender,
     );
   }
 }

@@ -20,6 +20,7 @@ class _SignupPageState extends State<SignupPage> {
   bool _showPw = false;
   bool _agreeTerms = false;
   bool _agreePrivacy = false;
+  String _gender = 'male';
 
   Future<void> _submit() async {
     if (_nameCtrl.text.isEmpty || _emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
@@ -40,6 +41,7 @@ class _SignupPageState extends State<SignupPage> {
         email: _emailCtrl.text,
         password: _pwCtrl.text,
         phone: _phoneCtrl.text,
+        gender: _gender,
       );
     } catch (e) {
       if (!mounted) return;
@@ -73,6 +75,7 @@ class _SignupPageState extends State<SignupPage> {
               _field('이름', _nameCtrl, '이름을 입력하세요', Icons.person_outline),
               _field('이메일', _emailCtrl, '이메일을 입력하세요', Icons.email_outlined, type: TextInputType.emailAddress),
               _field('전화번호 (선택)', _phoneCtrl, '010-0000-0000', Icons.phone_outlined, type: TextInputType.phone),
+              _genderField(),
             ]),
             const SizedBox(height: 16),
             _section('비밀번호', [
@@ -178,6 +181,57 @@ class _SignupPageState extends State<SignupPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _genderField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '성별',
+          style: TextStyle(
+            color: AppColors.textDark,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.4,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(child: _genderOption('male', '남성')),
+            const SizedBox(width: 10),
+            Expanded(child: _genderOption('female', '여성')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _genderOption(String value, String label) {
+    final selected = _gender == value;
+    return GestureDetector(
+      onTap: () => setState(() => _gender = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.black.withOpacity(0.06),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.textMuted,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
     );
   }
 
