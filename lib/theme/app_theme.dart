@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF0D0D0D);
-  static const Color background = Color(0xFFF7F6F3);
+  static const Color primary = Color(0xFF000000);
+  static const Color background = Color(0xFFF8FAFC);
   static const Color card = Colors.white;
-  static const Color accent = Color(0xFFF5C842);
+  static const Color accent = Color(0xFFFBBF24);
   static const Color subtle = Color(0xFFEEECEA);
   static const Color textMuted = Color(0xFF8A8880);
   static const Color textLight = Color(0xFFB0ADA8);
   static const Color textFaint = Color(0xFFC0BDB8);
-  static const Color textDark = Color(0xFF3D3B38);
+  static const Color textDark = Color(0xFF000000);
   static const Color border = Color(0x0D000000);
   static const Color borderMedium = Color(0x14000000);
+  static const Color success = Color(0xFF22C55E);
 }
 
 class AppTheme {
@@ -24,8 +25,8 @@ class AppTheme {
           surface: AppColors.background,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.textDark,
           elevation: 0,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
