@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/models.dart';
-import '../services/activity_service.dart';
 import '../services/items_service.dart';
 import '../widgets/surfaces.dart';
 
@@ -18,71 +17,34 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final ItemsService _itemsService = ItemsService();
-  final ActivityService _activityService = ActivityService();
 
-  List<ActivityItem> _recentActivities = [];
+  List<LostItem> _recentItems = [];
   bool _recentLoading = true;
   String? _recentError;
-
-  final Map<String, int> _animatedValues = {
-    'registered': 0,
-    'matched': 0,
-    'rate': 0,
-  };
-  final Map<String, int> _targets = {
-    'registered': 156,
-    'matched': 89,
-    'rate': 57,
-  };
+  int _totalRegistered = 0;
 
   @override
   void initState() {
     super.initState();
     _loadRecentItems();
-    _startAnimation();
   }
 
   Future<void> _loadRecentItems() async {
     try {
-      final result = await _itemsService.fetchItems(limit: 1);
-      final activities = await _activityService.fetchRecent(limit: 5);
+      final result = await _itemsService.fetchItems(limit: 5);
       if (!mounted) return;
       setState(() {
-        _recentActivities = activities;
+        _recentItems = result.items;
+        _totalRegistered = result.total;
         _recentLoading = false;
         _recentError = null;
-        _targets['registered'] = result.total;
-        _targets['matched'] = 0;
-        _targets['rate'] = result.total == 0 ? 0 : 0;
       });
-      _startAnimation();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _recentLoading = false;
         _recentError = e.toString();
       });
-    }
-  }
-
-  void _startAnimation() {
-    for (final key in _targets.keys) {
-      _animateValue(key, _targets[key]!);
-    }
-  }
-
-  void _animateValue(String key, int target) async {
-    final steps = 40;
-    for (int i = 1; i <= steps; i++) {
-      await Future.delayed(const Duration(milliseconds: 30));
-      if (mounted) {
-        setState(() {
-          _animatedValues[key] = ((target / steps) * i).floor().clamp(
-            0,
-            target,
-          );
-        });
-      }
     }
   }
 
@@ -107,8 +69,28 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu, color: AppColors.textDark),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.textDark,
+            ),
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () =>
+                  context.push(auth.isLoggedIn ? '/profile' : '/login'),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.subtle,
+                backgroundImage: auth.isLoggedIn
+                    ? AssetImage(auth.user!.genderAvatarAsset)
+                    : null,
+                child: auth.isLoggedIn
+                    ? null
+                    : const Icon(Icons.person_outline, color: AppColors.textDark),
+              ),
+            ),
           ),
         ],
       ),
@@ -118,322 +100,138 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Hero
-            Container(
-              color: AppColors.primary,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (auth.isLoggedIn) ...[
-                    const Text(
-                      'Welcome back',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${auth.user!.name}님 👋',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ] else ...[
-                    const Text(
-                      '퀴즈로 찾는',
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '분실물 매칭 서비스 ',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Image.asset(
-                          'assets/app_logo_T_white_N.png',
-                          width: 37,
-                          height: 37,
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  // Stats
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Row(
-                      children: [
-                        _statCell(
-                          _animatedValues['registered'].toString(),
-                          '건',
-                          '등록됨',
-                        ),
-                        _divider(),
-                        _statCell(
-                          _animatedValues['matched'].toString(),
-                          '건',
-                          '매칭됨',
-                        ),
-                        _divider(),
-                        _statCell(
-                          _animatedValues['rate'].toString(),
-                          '%',
-                          '성공률',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: AspectRatio(
+                aspectRatio: 1466 / 815,
+                child: Image.asset(
+                  'assets/상단배경.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            // Action cards
+            const SizedBox(height: 20),
+            // Search bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () => context.push('/lost-items'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  decoration: neumorphicDecoration(radius: 24),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textLight,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          '무엇을 잃어버리셨나요?',
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.textLight,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Persona cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
+                    child: _personaCard(
+                      imagePath: 'assets/찾아주세요.png',
+                      title: '잃어버렸어요',
+                      subtitle: '분실물 등록하고\n찾아보세요',
                       onTap: () => context.push('/lost-items'),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: neumorphicDecoration(radius: 18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.search_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              '분실물\n찾기',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                height: 1.3,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              '퀴즈 풀고\n내 물건 찾기',
-                              style: TextStyle(
-                                color: AppColors.textLight,
-                                fontSize: 11,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: const [
-                                Text(
-                                  '바로가기',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                SizedBox(width: 2),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 12,
-                                  color: AppColors.textMuted,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: GestureDetector(
+                    child: _personaCard(
+                      imagePath: 'assets/습득물등록.png',
+                      title: '주웠어요',
+                      subtitle: '습득물 등록하고\n주인을 찾아주세요',
                       onTap: () => context.push('/register-found'),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.upload_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              '습득물\n등록',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                height: 1.3,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '주운 물건\n주인 찾아주기',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.4),
-                                fontSize: 11,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Text(
-                                  '등록하기',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.4),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 12,
-                                  color: Colors.white.withOpacity(0.4),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            // Feature grid
+            const SizedBox(height: 16),
+            // Stats
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _featureCell(Icons.map_outlined, '지도', '/map'),
-                  _featureCell(
-                    Icons.chat_bubble_outline_rounded,
-                    '채팅',
-                    '/chats',
+                  _statCell(
+                    background: const Color(0xFFF4F7FE),
+                    icon: Icons.description_outlined,
+                    iconColor: AppColors.interactive,
+                    value: '$_totalRegistered',
+                    unit: '건',
+                    label: '오늘 접수',
                   ),
-                  _featureCell(Icons.shopping_bag_outlined, '상점', '/shop'),
+                  const SizedBox(width: 8),
+                  _statCell(
+                    background: const Color(0xFFEFFBF3),
+                    icon: Icons.check_circle_outline_rounded,
+                    iconColor: AppColors.success,
+                    value: '0',
+                    unit: '건',
+                    label: '오늘 반환',
+                  ),
+                  const SizedBox(width: 8),
+                  _statCell(
+                    background: const Color(0xFFFDF0F0),
+                    icon: Icons.favorite_border_rounded,
+                    iconColor: const Color(0xFFEF4444),
+                    value: '0',
+                    unit: '%',
+                    label: '매칭 성공률',
+                  ),
                 ],
               ),
             ),
-            // Tip
+            const SizedBox(height: 24),
+            // Nearby
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: neumorphicDecoration(radius: 18),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.subtle,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.bolt_rounded,
-                        color: AppColors.primary,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '오늘의 팁',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            '물건 특징을 세밀하게 입력할수록 매칭 성공률이 올라가요!',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 11,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Recent activity
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    '최근 활동',
+                    '내 주변 분실물',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: AppColors.primary,
+                      color: AppColors.textDark,
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => context.push('/ranking'),
+                    onTap: () => context.push('/map'),
                     child: const Row(
                       children: [
                         Text(
-                          '전체보기',
+                          '지도 보기',
                           style: TextStyle(
                             color: AppColors.textLight,
                             fontSize: 12,
@@ -451,10 +249,253 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              child: Container(
-                decoration: neumorphicDecoration(radius: 18),
-                child: _buildRecentItems(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () => context.push('/map'),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: neumorphicDecoration(radius: 18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.asset(
+                            'assets/지도.png',
+                            height: 90,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '내 주변',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '${_recentItems.length}',
+                                    style: const TextStyle(
+                                      color: AppColors.textDark,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const TextSpan(
+                                    text: ' 건 발견',
+                                    style: TextStyle(
+                                      color: AppColors.textDark,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '최근 1km 이내',
+                              style: TextStyle(
+                                color: AppColors.textFaint,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Recently registered
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '방금 등록된 분실물',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.push('/lost-items'),
+                    child: const Row(
+                      children: [
+                        Text(
+                          '더보기',
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: 14,
+                          color: AppColors.textLight,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 168, child: _buildRecentItems()),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _personaCard({
+    required String imagePath,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                imagePath,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward,
+                size: 13,
+                color: AppColors.textDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCell({
+    required Color background,
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String unit,
+    required String label,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: iconColor.withOpacity(0.15),
+              child: Icon(icon, color: iconColor, size: 14),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        unit,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -465,18 +506,15 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildRecentItems() {
     if (_recentLoading) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
     if (_recentError != null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
+      return Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               _recentError!,
@@ -493,9 +531,8 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    if (_recentActivities.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
+    if (_recentItems.isEmpty) {
+      return const Center(
         child: Text(
           '아직 등록된 습득물이 없습니다.',
           style: TextStyle(color: AppColors.textMuted, fontSize: 12),
@@ -503,120 +540,90 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    return Column(
-      children: List.generate(_recentActivities.length, (index) {
-        final item = _recentActivities[index];
-        return Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: index < _recentActivities.length - 1
-                  ? BorderSide(color: Colors.black.withOpacity(0.04))
-                  : BorderSide.none,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _activityIcon(item.icon),
-                  color: AppColors.primary,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.bolt_outlined,
-                          size: 10,
-                          color: AppColors.textFaint,
-                        ),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            item.location ?? item.description,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textFaint,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                _formatDate(item.createdAt),
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textFaint,
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _recentItems.length,
+      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      itemBuilder: (_, index) => _recentItemCard(_recentItems[index]),
     );
   }
 
-  Widget _statCell(String value, String unit, String label) {
-    return Expanded(
+  Widget _recentItemCard(LostItem item) {
+    return GestureDetector(
+      onTap: () => context.push('/lost-items'),
       child: Container(
-        color: AppColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        width: 130,
+        decoration: neumorphicDecoration(radius: 16),
+        clipBehavior: Clip.antiAlias,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            Stack(
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                  ),
+                SizedBox(
+                  width: 130,
+                  height: 90,
+                  child: item.imageUrl != null
+                      ? Image.network(item.imageUrl!, fit: BoxFit.cover)
+                      : Container(
+                          color: AppColors.subtle,
+                          child: const Icon(
+                            Icons.image_outlined,
+                            color: AppColors.textFaint,
+                          ),
+                        ),
                 ),
-                Text(
-                  unit,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _timeAgo(item.createdAt),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.35),
-                fontSize: 11,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textFaint,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -625,53 +632,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _divider() =>
-      Container(width: 1, height: 60, color: Colors.white.withOpacity(0.06));
-
-  Widget _featureCell(IconData icon, String label, String path) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => context.push(path),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: AppColors.subtle,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: AppColors.primary, size: 22),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  String _timeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date.toLocal());
+    if (diff.inMinutes < 1) return '방금 전';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
+    if (diff.inHours < 24) return '${diff.inHours}시간 전';
+    return '${diff.inDays}일 전';
   }
-
-  IconData _activityIcon(String icon) {
-    switch (icon) {
-      case 'search':
-        return Icons.search_rounded;
-      case 'shopping_bag':
-        return Icons.shopping_bag_outlined;
-      case 'inventory':
-      default:
-        return Icons.inventory_2_outlined;
-    }
-  }
-
-  String _formatDate(DateTime date) =>
-      '${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
 
   Widget _buildDrawer(AuthProvider auth) {
     return Drawer(
@@ -688,9 +655,10 @@ class _HomePageState extends State<HomePage> {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          auth.user!.avatar.isNotEmpty ? auth.user!.avatar : '🙂',
-                          style: const TextStyle(fontSize: 36),
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          backgroundImage: AssetImage(auth.user!.genderAvatarAsset),
                         ),
                         const SizedBox(height: 10),
                         Text(

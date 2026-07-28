@@ -605,186 +605,144 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          '마이페이지',
+          style: TextStyle(
+            color: AppColors.textDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: -0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.textDark),
+            onPressed: () => context.push('/account-settings'),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.textDark,
+            ),
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('준비 중인 기능입니다.')),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
             child: Column(
               children: [
-                // Header
-                Container(
-                  color: AppColors.primary,
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 16,
-                    left: 16,
-                    right: 16,
-                    bottom: 24,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
+                // Profile card
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: neumorphicDecoration(radius: 20),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 32,
+                              backgroundColor: AppColors.subtle,
+                              backgroundImage: AssetImage(user.genderAvatarAsset),
                             ),
-                            onPressed: () {
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              } else {
-                                context.go('/');
-                              }
-                            },
-                            padding: EdgeInsets.zero,
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              auth.logout();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('로그아웃 되었습니다')),
-                              );
-                              context.go('/');
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.1),
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(
-                                    Icons.logout_outlined,
-                                    color: Colors.white38,
-                                    size: 14,
+                                  Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                      color: AppColors.textDark,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      letterSpacing: -0.5,
+                                    ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    '로그아웃',
-                                    style: TextStyle(
-                                      color: Colors.white38,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    user.email,
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
                                       fontSize: 12,
                                     ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.star_outline,
+                                        color: AppColors.accent,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${user.points} pts',
+                                        style: const TextStyle(
+                                          color: AppColors.textDark,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const Text(
+                                        ' · ',
+                                        style: TextStyle(color: AppColors.textFaint),
+                                      ),
+                                      Text(
+                                        '${user.itemsFound}개 찾아줌',
+                                        style: const TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.1),
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.avatar,
-                                style: const TextStyle(fontSize: 28),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  user.email,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.4),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.star_outline,
-                                      color: Colors.white54,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${user.points} pts',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      ' · ',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.2),
-                                      ),
-                                    ),
-                                    Text(
-                                      '${user.itemsFound}개 찾아줌',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.4),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            _statCell(user.points.toString(), '포인트'),
-                            Container(
-                              width: 1,
-                              height: 50,
-                              color: Colors.white.withOpacity(0.06),
-                            ),
-                            _statCell(user.itemsFound.toString(), '찾아줌'),
-                            Container(
-                              width: 1,
-                              height: 50,
-                              color: Colors.white.withOpacity(0.06),
-                            ),
-                            _statCell('12위', '랭킹'),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () => context.push('/ranking'),
+                          child: Row(
+                            children: [
+                              _statCell(
+                                Icons.description_outlined,
+                                AppColors.interactive,
+                                user.points.toString(),
+                                '포인트',
+                              ),
+                              _statCell(
+                                Icons.search_rounded,
+                                AppColors.success,
+                                user.itemsFound.toString(),
+                                '찾아줌',
+                              ),
+                              _statCell(
+                                Icons.emoji_events_outlined,
+                                const Color(0xFFF59E0B),
+                                '12위',
+                                '랭킹',
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: AppColors.textFaint,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 // Tab switcher
@@ -831,9 +789,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _quickLink('🔖', '즐겨찾기', '/favorites'),
-                          _quickLink('💬', '채팅', '/chats'),
-                          _quickLink('🛍️', '포인트 상점', '/shop'),
+                          _quickLinkImage(
+                            'assets/즐겨찾기.png',
+                            const Color(0xFFF7F2F7),
+                            '/favorites',
+                          ),
+                          _quickLinkImage(
+                            'assets/채팅.png',
+                            const Color(0xFFEEEFF8),
+                            '/chats',
+                          ),
                         ],
                       ),
                     ],
@@ -841,7 +806,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 // Settings
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    MediaQuery.of(context).padding.bottom + 84,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -865,7 +835,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 value: _notifEnabled,
                                 onChanged: (v) =>
                                     setState(() => _notifEnabled = v),
-                                activeColor: AppColors.primary,
+                                activeColor: AppColors.interactive,
                               ),
                             ),
                             Divider(
@@ -894,6 +864,19 @@ class _ProfilePageState extends State<ProfilePage> {
                               icon: Icons.settings_outlined,
                               label: '계정 설정',
                               onTap: () => context.push('/account-settings'),
+                            ),
+                            Divider(
+                              height: 1,
+                              color: Colors.black.withOpacity(0.04),
+                            ),
+                            _settingRow(
+                              icon: Icons.logout_rounded,
+                              label: '로그아웃',
+                              iconColor: Colors.red.shade400,
+                              onTap: () async {
+                                await auth.logout();
+                                if (context.mounted) context.go('/');
+                              },
                             ),
                           ],
                         ),
@@ -955,14 +938,39 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (_myFoundItems.isEmpty) {
       return [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: neumorphicDecoration(radius: 18),
-          child: const Text(
-            '아직 등록한 습득물이 없습니다.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        GestureDetector(
+          onTap: () => context.push('/register-found'),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: neumorphicDecoration(radius: 18),
+            child: Row(
+              children: [
+                Image.asset('assets/돋보기.png', width: 44, height: 44),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '아직 등록한 습득물이 없어요.',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '습득물을 등록하고 주인을 찾아주세요!',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textFaint),
+              ],
+            ),
           ),
         ),
       ];
@@ -1151,31 +1159,39 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _statCell(String val, String label) {
+  Widget _statCell(IconData icon, Color iconColor, String val, String label) {
     return Expanded(
-      child: Container(
-        color: AppColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          children: [
-            Text(
-              val,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: iconColor.withOpacity(0.15),
+            child: Icon(icon, color: iconColor, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                val,
+                style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.3),
-                fontSize: 10,
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1188,7 +1204,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.primary : Colors.transparent,
+            color: active ? AppColors.interactive : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -1215,28 +1231,18 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _quickLink(String emoji, String label, String path) {
+  Widget _quickLinkImage(String imagePath, Color background, String path) {
     return Expanded(
       child: GestureDetector(
         onTap: () => context.push(path),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: neumorphicDecoration(radius: 14),
-          child: Column(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 22)),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(14),
           ),
+          child: Image.asset(imagePath, height: 110, fit: BoxFit.contain),
         ),
       ),
     );
@@ -1247,6 +1253,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required String label,
     VoidCallback? onTap,
     Widget? trailing,
+    Color? iconColor,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -1261,13 +1268,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: AppColors.subtle,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 16, color: AppColors.primary),
+              child: Icon(icon, size: 16, color: iconColor ?? AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 14, color: AppColors.primary),
+                style: TextStyle(fontSize: 14, color: iconColor ?? AppColors.primary),
               ),
             ),
             trailing ??
@@ -1346,33 +1353,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                  Divider(height: 1, color: Colors.black.withOpacity(0.06)),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      16,
-                      16,
-                      MediaQuery.of(context).padding.bottom + 84,
-                    ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => setState(() => _modal = null),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          '확인',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 84),
                 ],
               ),
               ),
