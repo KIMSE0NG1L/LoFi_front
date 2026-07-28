@@ -51,6 +51,8 @@ GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRoute
           '/signup',
           '/account-settings',
           '/chat/',
+          '/register-found',
+          '/register-lost',
         ];
         final hideNav = noNavPaths.any((p) => location.startsWith(p));
         return PopScope(
@@ -67,7 +69,7 @@ GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRoute
           },
           child: Scaffold(
             extendBody: true,
-            body: child,
+            body: _AppShellBody(location: location, child: child),
             bottomNavigationBar: hideNav ? null : const BottomNav(),
           ),
         );
@@ -110,6 +112,52 @@ GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRoute
     ),
   ],
 );
+
+// 하단바 탭 순서(홈-찾기-채팅-MY)를 기준으로, 이동 방향에 맞춰
+// 오른쪽/왼쪽에서 슬라이드해 들어오는 전환 애니메이션.
+const _tabOrder = ['/', '/lost-items', '/chats', '/profile'];
+
+int _tabIndexFor(String location) {
+  if (location == '/') return 0;
+  for (var i = 1; i < _tabOrder.length; i++) {
+    if (location.startsWith(_tabOrder[i])) return i;
+  }
+  return -1;
+}
+
+class _AppShellBody extends StatefulWidget {
+  final String location;
+  final Widget child;
+  const _AppShellBody({required this.location, required this.child});
+
+  @override
+  State<_AppShellBody> createState() => _AppShellBodyState();
+}
+
+class _AppShellBodyState extends State<_AppShellBody> {
+  int _previousIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentIndex = _tabIndexFor(widget.location);
+    final forward = currentIndex == -1 ? true : currentIndex >= _previousIndex;
+    if (currentIndex != -1) _previousIndex = currentIndex;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) {
+        final offset = Tween<Offset>(
+          begin: Offset(forward ? 1 : -1, 0),
+          end: Offset.zero,
+        ).animate(animation);
+        return SlideTransition(position: offset, child: child);
+      },
+      child: KeyedSubtree(key: ValueKey(widget.location), child: widget.child),
+    );
+  }
+}
 
 class App extends StatefulWidget {
   final bool onboardingDone;

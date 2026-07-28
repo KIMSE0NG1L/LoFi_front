@@ -25,10 +25,24 @@ class _BottomNavState extends State<BottomNav> {
     );
   }
 
+  static const _slotCount = 5;
+  static const _indicatorSize = 36.0;
+  // 홈=0, 찾기=1, (센터 등록 버튼=2, 인디케이터 없음), 채팅=3, MY=4
+  static const _indicatorTop = 8.0;
+
+  int _activeSlot(String location, bool loggedIn) {
+    if (location == '/') return 0;
+    if (location.startsWith('/lost-items')) return 1;
+    if (location.startsWith('/chats')) return 3;
+    if (location.startsWith(loggedIn ? '/profile' : '/login')) return 4;
+    return -1;
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final location = GoRouterState.of(context).uri.toString();
+    final activeSlot = _activeSlot(location, auth.isLoggedIn);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -52,19 +66,55 @@ class _BottomNavState extends State<BottomNav> {
                   ),
                 ],
               ),
-              child: Row(
-                children: [
-                  _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
-                  _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
-                  _CenterButton(onTap: _showRegister),
-                  _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
-                  _NavItem(
-                    icon: Icons.person_outline_rounded,
-                    label: 'MY',
-                    path: auth.isLoggedIn ? '/profile' : '/login',
-                    currentPath: location,
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final slotWidth = constraints.maxWidth / _slotCount;
+                  return Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutCubic,
+                        top: _indicatorTop,
+                        left: activeSlot == -1
+                            ? (slotWidth - _indicatorSize) / 2
+                            : activeSlot * slotWidth + (slotWidth - _indicatorSize) / 2,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: activeSlot == -1 ? 0 : 1,
+                          child: Container(
+                            width: _indicatorSize,
+                            height: _indicatorSize,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _NavItem(icon: Icons.home_rounded, label: '홈', path: '/', currentPath: location),
+                          _NavItem(icon: Icons.search_rounded, label: '찾기', path: '/lost-items', currentPath: location),
+                          _CenterButton(onTap: _showRegister),
+                          _NavItem(icon: Icons.chat_bubble_outline_rounded, label: '채팅', path: '/chats', currentPath: location),
+                          _NavItem(
+                            icon: Icons.person_outline_rounded,
+                            label: 'MY',
+                            path: auth.isLoggedIn ? '/profile' : '/login',
+                            currentPath: location,
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -104,35 +154,10 @@ class _NavItem extends StatelessWidget {
             SizedBox(
               width: 36,
               height: 36,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AnimatedScale(
-                    scale: isActive ? 1 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    icon,
-                    size: 22,
-                    color: isActive ? AppColors.primary : AppColors.textLight,
-                  ),
-                ],
+              child: Icon(
+                icon,
+                size: 22,
+                color: isActive ? AppColors.interactive : AppColors.textLight,
               ),
             ),
             const SizedBox(height: 2),
@@ -141,7 +166,7 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? AppColors.primary : AppColors.textLight,
+                color: isActive ? AppColors.interactive : AppColors.textLight,
               ),
             ),
           ],
@@ -169,7 +194,7 @@ class _CenterButton extends StatelessWidget {
               height: 48,
               margin: const EdgeInsets.only(bottom: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: AppColors.interactive,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
                 boxShadow: [
