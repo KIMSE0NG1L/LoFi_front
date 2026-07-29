@@ -68,13 +68,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: AppColors.textDark,
-            ),
-            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(

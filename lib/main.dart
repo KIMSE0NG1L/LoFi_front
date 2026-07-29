@@ -12,6 +12,7 @@ void main() async {
   final onboardingDone = prefs.getBool('onboarding_done') ?? false;
 
   final authProvider = AuthProvider();
+  authProvider.listenAuthChanges();
   await authProvider.tryRestoreSession();
 
   runApp(App(onboardingDone: onboardingDone, authProvider: authProvider));

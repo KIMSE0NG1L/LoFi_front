@@ -184,6 +184,34 @@ class _LostItemsPageState extends State<LostItemsPage> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: GestureDetector(
+              onTap: () => context.push('/lost-reports'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Colors.amber, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        '내 물건을 잃어버렸나요? 현상금 걸고 분실 신고하기',
+                        style: TextStyle(color: AppColors.textDark, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: Colors.amber.shade800, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // Active filters
           if (_activeFilters > 0)
             Padding(

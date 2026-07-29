@@ -18,6 +18,7 @@ class ItemsResult {
 }
 
 const _foundItemSelect = '*, profiles(id, name, avatar), quizzes(id, question, type, options)';
+const _lostReportSelect = '*, profiles!lost_items_owner_id_fkey(id, name, avatar)';
 
 class ItemsService {
   Future<ItemsResult> fetchItems({
@@ -172,6 +173,102 @@ class ItemsService {
   Future<List<Quiz>> fetchMyItemQuizzesWithAnswers(String foundItemId) async {
     final data = await supabase.rpc('get_my_item_quizzes', params: {'p_found_item_id': foundItemId});
     return _quizzesFromJson(data);
+  }
+
+  // ---------------------------------------------------------------------
+  // 분실 신고 (lost_items)
+  // ---------------------------------------------------------------------
+
+  Future<LostReport> createLostItem({
+    required String category,
+    required String title,
+    required String description,
+    required String location,
+    String? imageUrl,
+    String? reward,
+    int bountyPoints = 0,
+  }) async {
+    final data = await supabase.rpc('create_lost_item', params: {
+      'p_category': category,
+      'p_title': title,
+      'p_description': description,
+      'p_location': location,
+      'p_image_url': imageUrl,
+      'p_reward': reward,
+      'p_bounty_points': bountyPoints,
+    }) as Map<String, dynamic>;
+
+    return _lostReportFromJson(data);
+  }
+
+  Future<List<LostReport>> fetchPublicLostReports({
+    String? category,
+    String? search,
+    int limit = 20,
+  }) async {
+    var query = supabase
+        .from('lost_items')
+        .select(_lostReportSelect)
+        .eq('status', 'searching');
+
+    if (category != null && category.isNotEmpty) {
+      query = query.eq('category', category);
+    }
+    if (search != null && search.isNotEmpty) {
+      query = query.ilike('title', '%$search%');
+    }
+
+    final data = await query.order('created_at', ascending: false).limit(limit);
+    return (data as List)
+        .map((json) => _lostReportFromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<LostReport>> fetchMyLostReports() async {
+    final uid = _requireUid();
+    final data = await supabase
+        .from('lost_items')
+        .select(_lostReportSelect)
+        .eq('owner_id', uid)
+        .order('created_at', ascending: false);
+    return (data as List)
+        .map((json) => _lostReportFromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> cancelLostReport(String id) async {
+    await supabase.rpc('cancel_lost_item', params: {'p_lost_item_id': id});
+  }
+
+  Future<void> resolveLostReport(String id, String finderId) async {
+    await supabase.rpc('resolve_lost_item', params: {
+      'p_lost_item_id': id,
+      'p_finder_id': finderId,
+    });
+  }
+
+  LostReport _lostReportFromJson(Map<String, dynamic> json) {
+    final profile = json['profiles'] is Map<String, dynamic>
+        ? json['profiles'] as Map<String, dynamic>
+        : null;
+
+    return LostReport(
+      id: json['id'] as String,
+      category: json['category'] as String? ?? 'etc',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      imageUrl: json['image_url'] as String?,
+      createdAt:
+          DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(),
+      location: json['location'] as String? ?? '',
+      status: json['status'] as String? ?? 'searching',
+      reward: json['reward'] as String?,
+      bountyPoints: (json['bounty_points'] as num?)?.toInt() ?? 0,
+      ownerId: json['owner_id'] as String? ?? '',
+      ownerName: profile?['name'] as String?,
+      matchedFinderId: json['matched_finder_id'] as String?,
+    );
   }
 
   List<Map<String, dynamic>> _normalizeQuizzes(List<Map<String, dynamic>> quizzes) {

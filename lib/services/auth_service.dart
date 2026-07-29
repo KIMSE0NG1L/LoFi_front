@@ -60,11 +60,24 @@ class AuthService {
     await supabase.auth.signOut();
   }
 
+  /// 소셜로그인 — 외부 브라우저에서 진행되고, 완료되면 딥링크로 앱에 돌아와
+  /// onAuthStateChange 스트림으로 세션이 통지된다 (여기서 완료를 기다리지 않음).
+  Future<void> signInWithOAuth(OAuthProvider provider, {String? scopes}) async {
+    await supabase.auth.signInWithOAuth(
+      provider,
+      redirectTo: 'guhaejo://login-callback/',
+      authScreenLaunchMode: LaunchMode.externalApplication,
+      scopes: scopes,
+    );
+  }
+
+  Stream<AuthState> get onAuthStateChange => supabase.auth.onAuthStateChange;
+
   Future<AppUser?> restoreSession() async {
     final user = supabase.auth.currentUser;
-    if (user == null || user.email == null) return null;
+    if (user == null) return null;
     try {
-      return await _fetchProfile(user.id, user.email!);
+      return await _fetchProfile(user.id, user.email ?? '');
     } catch (_) {
       return null;
     }

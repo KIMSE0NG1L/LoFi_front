@@ -48,7 +48,7 @@ class MapPos {
   const MapPos({required this.x, required this.y});
 }
 
-class MyLostItem {
+class LostReport {
   final String id;
   final String category;
   final String title;
@@ -58,8 +58,12 @@ class MyLostItem {
   final String location;
   final String status; // 'searching' | 'matched' | 'closed'
   final String? reward;
+  final int bountyPoints;
+  final String ownerId;
+  final String? ownerName;
+  final String? matchedFinderId;
 
-  const MyLostItem({
+  const LostReport({
     required this.id,
     required this.category,
     required this.title,
@@ -69,6 +73,10 @@ class MyLostItem {
     required this.location,
     required this.status,
     this.reward,
+    this.bountyPoints = 0,
+    required this.ownerId,
+    this.ownerName,
+    this.matchedFinderId,
   });
 }
 
@@ -141,24 +149,32 @@ class ChatThread {
   final String itemTitle;
   final String itemEmoji;
   final String otherUser;
+  final String? otherUserId;
   final String otherAvatar;
   final String lastMessage;
   final String lastTime;
   final int unread;
   final List<ChatMessage> messages;
   final DateTime? lastMessageAt;
+  final String? lostItemId;
+  final String? lostItemOwnerId;
+  final String? lostItemStatus;
 
   const ChatThread({
     required this.id,
     required this.itemTitle,
     required this.itemEmoji,
     required this.otherUser,
+    this.otherUserId,
     required this.otherAvatar,
     required this.lastMessage,
     required this.lastTime,
     required this.unread,
     required this.messages,
     this.lastMessageAt,
+    this.lostItemId,
+    this.lostItemOwnerId,
+    this.lostItemStatus,
   });
 }
 

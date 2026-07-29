@@ -268,7 +268,7 @@ class _RegisterSheet extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text('주운 물건의\n주인 찾아주기', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, height: 1.5)),
                         const SizedBox(height: 12),
-                        Text('+10pts →', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w500)),
+                        Text('+50pts →', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),

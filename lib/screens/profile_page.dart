@@ -25,7 +25,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _activeTab = 'items';
   bool _notifEnabled = true;
-  String? _modal;
   List<LostItem> _myFoundItems = [];
   List<ActivityItem> _myActivities = [];
   bool _itemsLoading = true;
@@ -845,7 +844,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             _settingRow(
                               icon: Icons.description_outlined,
                               label: '서비스 이용약관',
-                              onTap: () => setState(() => _modal = 'terms'),
+                              onTap: () => _showPolicyModal(
+                                '서비스 이용약관',
+                                _termsContent,
+                              ),
                             ),
                             Divider(
                               height: 1,
@@ -854,7 +856,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             _settingRow(
                               icon: Icons.shield_outlined,
                               label: '개인정보 처리방침',
-                              onTap: () => setState(() => _modal = 'privacy'),
+                              onTap: () => _showPolicyModal(
+                                '개인정보 처리방침',
+                                _privacyContent,
+                              ),
                             ),
                             Divider(
                               height: 1,
@@ -887,11 +892,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-          if (_modal != null)
-            _buildPolicyModal(
-              _modal == 'terms' ? '서비스 이용약관' : '개인정보 처리방침',
-              _modal == 'terms' ? _termsContent : _privacyContent,
-            ),
         ],
       ),
     );
@@ -1289,75 +1289,68 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildPolicyModal(String title, String content) {
-    return GestureDetector(
-      onTap: () => setState(() => _modal = null),
-      child: Container(
-        color: Colors.black54,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: GestureDetector(
-            onTap: () {},
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.75,
-              child: GlassContainer(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+  void _showPolicyModal(String title, String content) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.75,
+        child: GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.primary,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: AppColors.primary,
-                          ),
+                    GestureDetector(
+                      onTap: () => Navigator.of(sheetContext).pop(),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _modal = null),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(height: 1, color: Colors.black.withOpacity(0.06)),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        content,
-                        style: const TextStyle(
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
                           color: AppColors.textMuted,
-                          fontSize: 14,
-                          height: 1.6,
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: Colors.black.withOpacity(0.06)),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    content,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 14,
+                      height: 1.6,
+                    ),
                   ),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 84),
-                ],
+                ),
               ),
-              ),
-            ),
+              SizedBox(height: MediaQuery.of(sheetContext).padding.bottom + 20),
+            ],
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_page.dart';
 import 'screens/lost_items_page.dart';
+import 'screens/lost_reports_page.dart';
 import 'screens/register_found_page.dart';
 import 'screens/register_lost_page.dart';
 import 'screens/ranking_page.dart';
@@ -87,6 +88,10 @@ GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRoute
         GoRoute(
           path: '/register-lost',
           builder: (ctx, state) => const RegisterLostPage(),
+        ),
+        GoRoute(
+          path: '/lost-reports',
+          builder: (ctx, state) => const LostReportsPage(),
         ),
         GoRoute(path: '/ranking', builder: (ctx, state) => const RankingPage()),
         GoRoute(path: '/login', builder: (ctx, state) => const LoginPage()),

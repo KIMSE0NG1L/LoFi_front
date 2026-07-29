@@ -19,6 +19,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _showResetModal = false;
   final _resetEmailCtrl = TextEditingController();
   bool _resetSent = false;
+  bool _kakaoLoading = false;
+  bool _googleLoading = false;
 
   Future<void> _submit() async {
     if (_emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
@@ -43,6 +45,30 @@ class _LoginPageState extends State<LoginPage> {
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) context.go('/');
     });
+  }
+
+  Future<void> _loginWithKakao() async {
+    setState(() => _kakaoLoading = true);
+    try {
+      await context.read<AuthProvider>().loginWithKakao();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _kakaoLoading = false);
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() => _googleLoading = true);
+    try {
+      await context.read<AuthProvider>().loginWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
   }
 
   void _sendReset() {
@@ -187,6 +213,34 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text('또는', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+                              ),
+                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _socialButton(
+                            label: '카카오로 시작하기',
+                            backgroundColor: const Color(0xFFFEE500),
+                            textColor: const Color(0xFF191600),
+                            loading: _kakaoLoading,
+                            onTap: _loginWithKakao,
+                          ),
+                          const SizedBox(height: 10),
+                          _socialButton(
+                            label: 'Google로 시작하기',
+                            backgroundColor: Colors.white,
+                            textColor: AppColors.textDark,
+                            border: Border.all(color: Colors.black.withOpacity(0.12)),
+                            loading: _googleLoading,
+                            onTap: _loginWithGoogle,
+                          ),
+                          const SizedBox(height: 20),
                           Center(
                             child: GestureDetector(
                               onTap: () => context.push('/signup'),
@@ -235,6 +289,39 @@ class _LoginPageState extends State<LoginPage> {
           ),
           if (_showResetModal) _buildResetModal(),
         ],
+      ),
+    );
+  }
+
+  Widget _socialButton({
+    required String label,
+    required Color backgroundColor,
+    required Color textColor,
+    required bool loading,
+    required VoidCallback onTap,
+    Border? border,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: loading ? null : onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: border?.top ?? BorderSide.none,
+          ),
+        ),
+        child: loading
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: textColor),
+              )
+            : Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
       ),
     );
   }

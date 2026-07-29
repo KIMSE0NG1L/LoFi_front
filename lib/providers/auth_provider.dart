@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show OAuthProvider, AuthChangeEvent;
 
 import '../models/models.dart';
 import '../services/auth_service.dart';
@@ -7,6 +10,7 @@ import '../services/items_service.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final ItemsService _itemsService = ItemsService();
+  StreamSubscription? _authSub;
 
   AppUser? _user;
   List<String> _favorites = [];
@@ -21,6 +25,36 @@ class AuthProvider extends ChangeNotifier {
     _user = user;
     await loadFavorites();
     notifyListeners();
+  }
+
+  /// 소셜로그인은 외부 브라우저 redirect로 비동기 완료되므로, 세션 변화를
+  /// 구독해뒀다가 로그인이 완료되면 프로필을 불러와 반영한다.
+  void listenAuthChanges() {
+    _authSub?.cancel();
+    _authSub = _authService.onAuthStateChange.listen((state) async {
+      if (state.event == AuthChangeEvent.signedIn && state.session != null) {
+        final email = state.session!.user.email ?? '';
+        try {
+          _user = await _authService.me(email: email);
+          await loadFavorites();
+          notifyListeners();
+        } catch (_) {}
+      } else if (state.event == AuthChangeEvent.signedOut) {
+        _user = null;
+        _favorites = [];
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<void> loginWithKakao() => _authService.signInWithOAuth(OAuthProvider.kakao);
+
+  Future<void> loginWithGoogle() => _authService.signInWithOAuth(OAuthProvider.google);
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> login(String email, String password) async {

@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../services/items_service.dart';
+import '../services/kakao_location_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import 'location_search_page.dart';
 
 class RegisterFoundPage extends StatefulWidget {
   const RegisterFoundPage({super.key});
@@ -21,12 +23,13 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
   final ItemsService _itemsService = ItemsService();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
+  final _detailLocationCtrl = TextEditingController();
   final List<Map<String, String>> _quizzes = [
     {'question': '', 'answer': ''},
   ];
 
   String _selectedCategory = '';
+  KakaoPlace? _selectedPlace;
   bool _submitting = false;
   File? _imageFile;
   final _imagePicker = ImagePicker();
@@ -49,10 +52,17 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     if (picked != null) setState(() => _imageFile = File(picked.path));
   }
 
+  Future<void> _pickLocation() async {
+    final place = await Navigator.of(context).push<KakaoPlace>(
+      MaterialPageRoute(builder: (_) => const LocationSearchPage()),
+    );
+    if (place != null) setState(() => _selectedPlace = place);
+  }
+
   Future<void> _submit() async {
     if (_titleCtrl.text.trim().isEmpty ||
         _selectedCategory.isEmpty ||
-        _locationCtrl.text.trim().isEmpty ||
+        _selectedPlace == null ||
         _descCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -89,11 +99,17 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
         imageUrl = await uploadItemImage(_imageFile!);
       }
 
+      final place = _selectedPlace!;
+      final detail = _detailLocationCtrl.text.trim();
+      final location = detail.isEmpty ? place.address : '${place.address} ($detail)';
+
       await _itemsService.createFoundItem(
         category: _selectedCategory,
         title: _titleCtrl.text.trim(),
         description: _descCtrl.text.trim(),
-        location: _locationCtrl.text.trim(),
+        location: location,
+        mapX: place.lng,
+        mapY: place.lat,
         quizzes: quizzes,
         imageUrl: imageUrl,
       );
@@ -117,7 +133,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
-    _locationCtrl.dispose();
+    _detailLocationCtrl.dispose();
     super.dispose();
   }
 
@@ -173,7 +189,12 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               ),
               const SizedBox(height: 14),
               _label('습득 장소 *'),
-              _field(_locationCtrl, '예: 강남역 2번 출구 근처'),
+              _locationPicker(),
+              if (_selectedPlace != null) ...[
+                const SizedBox(height: 10),
+                _label('상세 위치 (선택)'),
+                _field(_detailLocationCtrl, '예: 2번 출구 앞 편의점 근처'),
+              ],
               const SizedBox(height: 14),
               _label('상세 설명 *'),
               _field(_descCtrl, '물건의 특징, 상태 등을 자세히 적어주세요.', maxLines: 4),
@@ -276,6 +297,42 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               ),
             ),
             const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _locationPicker() {
+    return GestureDetector(
+      onTap: _pickLocation,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.black.withOpacity(0.06)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.place_outlined,
+              size: 18,
+              color: _selectedPlace != null ? AppColors.primary : AppColors.textFaint,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _selectedPlace?.address ?? '주소/장소 검색하기',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _selectedPlace != null ? AppColors.textDark : AppColors.textFaint,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(Icons.search, size: 18, color: AppColors.textFaint),
           ],
         ),
       ),

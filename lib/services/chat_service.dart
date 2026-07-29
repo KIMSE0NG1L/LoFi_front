@@ -4,6 +4,7 @@ import 'supabase_client.dart';
 const _threadSelect = '''
   id, created_at,
   found_items(id, title, category),
+  lost_items(id, title, category, status, owner_id),
   user_a:profiles!chat_threads_user_a_id_fkey(id, name, avatar),
   user_b:profiles!chat_threads_user_b_id_fkey(id, name, avatar),
   chat_messages(id, text, is_appointment, appointment_data, created_at, sender_id, profiles(id, name, avatar))
@@ -57,6 +58,24 @@ class ChatService {
     return _threadFromJson(data, currentUserId);
   }
 
+  /// 분실 신고에 채팅 걸기 — 기존 스레드가 있으면 재사용, 없으면 RPC가 생성
+  Future<ChatThread> startLostItemChat({
+    required String lostItemId,
+    required String currentUserId,
+  }) async {
+    final threadRow = await supabase.rpc('start_lost_item_chat', params: {
+      'p_lost_item_id': lostItemId,
+    }) as Map<String, dynamic>;
+
+    final data = await supabase
+        .from('chat_threads')
+        .select(_threadSelect)
+        .eq('id', threadRow['id'] as String)
+        .single();
+
+    return _threadFromJson(data, currentUserId);
+  }
+
   Future<ChatMessage> sendMessage({
     required String threadId,
     required String text,
@@ -88,7 +107,9 @@ class ChatService {
   ChatThread _threadFromJson(Map<String, dynamic> json, String currentUserId) {
     final userA = _map(json['user_a']);
     final userB = _map(json['user_b']);
-    final item = _map(json['found_items']);
+    final lostItem = _map(json['lost_items']);
+    final item = _map(json['found_items']) ?? lostItem;
+    final isLostItem = json['found_items'] == null && lostItem != null;
     final other = userA?['id'] == currentUserId ? userB : userA;
     final rawMessages = json['chat_messages'];
     final messages = _messagesFromJson(rawMessages, currentUserId);
@@ -97,15 +118,19 @@ class ChatService {
 
     return ChatThread(
       id: json['id'] as String,
-      itemTitle: item?['title'] as String? ?? '습득물',
+      itemTitle: item?['title'] as String? ?? (isLostItem ? '분실물' : '습득물'),
       itemEmoji: _categoryIcon(item?['category'] as String?),
       otherUser: other?['name'] as String? ?? '상대방',
+      otherUserId: other?['id'] as String?,
       otherAvatar: other?['avatar'] as String? ?? '',
       lastMessage: last?.text ?? '',
       lastTime: last?.time ?? _formatTime(json['created_at']),
       unread: 0,
       messages: messages,
       lastMessageAt: _latestMessageAt(rawMessages),
+      lostItemId: isLostItem ? lostItem['id'] as String? : null,
+      lostItemOwnerId: isLostItem ? lostItem['owner_id'] as String? : null,
+      lostItemStatus: isLostItem ? lostItem['status'] as String? : null,
     );
   }
 

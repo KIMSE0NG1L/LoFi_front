@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/chat_service.dart';
+import '../services/items_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/surfaces.dart';
 
@@ -18,6 +19,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final ChatService _chatService = ChatService();
+  final ItemsService _itemsService = ItemsService();
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final _apptLocationCtrl = TextEditingController();
@@ -29,6 +31,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _loading = true;
   bool _sending = false;
   bool _showAppointment = false;
+  bool _resolvingBounty = false;
   String? _error;
 
   @override
@@ -156,6 +159,40 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> _resolveBounty() async {
+    final thread = _thread;
+    if (thread?.lostItemId == null || thread?.otherUserId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('매칭 완료 처리'),
+        content: Text(
+          '${thread!.otherUser}님이 분실물을 찾아준 것으로 처리할까요?'
+          '${thread.lostItemId != null ? ' 걸어둔 현상금이 있다면 즉시 지급됩니다.' : ''}',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('취소')),
+          ElevatedButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('확인')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _resolvingBounty = true);
+    try {
+      await _itemsService.resolveLostReport(thread!.lostItemId!, thread.otherUserId!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('매칭 완료! 현상금이 지급되었습니다.')));
+      await _loadThread();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _resolvingBounty = false);
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
@@ -262,6 +299,7 @@ class _ChatPageState extends State<ChatPage> {
             padding: const EdgeInsets.all(16),
             children: [
               _safetyNotice(),
+              if (_canResolveBounty) _resolveBountyBanner(),
               if (_messages.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 48),
@@ -328,6 +366,56 @@ class _ChatPageState extends State<ChatPage> {
           ),
         ),
       ],
+    );
+  }
+
+  bool get _canResolveBounty {
+    final thread = _thread;
+    if (thread == null || thread.lostItemId == null) return false;
+    if (thread.lostItemStatus != 'searching') return false;
+    final myId = context.read<AuthProvider>().user?.id;
+    return myId != null && myId == thread.lostItemOwnerId;
+  }
+
+  Widget _resolveBountyBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '이 분이 내 분실물을 찾아줬나요?',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '매칭 완료로 처리하면 걸어둔 현상금이 즉시 지급됩니다.',
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _resolvingBounty ? null : _resolveBounty,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _resolvingBounty
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('매칭 완료 처리', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
