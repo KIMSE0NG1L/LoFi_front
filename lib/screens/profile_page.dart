@@ -525,7 +525,13 @@ class _ProfilePageState extends State<ProfilePage> {
     {'id': 'electronics', 'name': '전자기기'},
     {'id': 'clothing', 'name': '의류'},
     {'id': 'wallet', 'name': '지갑/카드'},
+    {'id': 'bag', 'name': '가방'},
     {'id': 'accessories', 'name': '액세서리'},
+    {'id': 'glasses', 'name': '안경/선글라스'},
+    {'id': 'umbrella', 'name': '우산'},
+    {'id': 'books', 'name': '도서/문구'},
+    {'id': 'keys', 'name': '열쇠'},
+    {'id': 'documents', 'name': '서류/카드'},
     {'id': 'etc', 'name': '기타'},
   ];
 
@@ -733,13 +739,34 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: neumorphicDecoration(radius: 18),
-                    child: Row(
+                    child: Stack(
                       children: [
-                        _tabBtn('items', '내 물건', Icons.inventory_2_outlined),
-                        _tabBtn(
-                          'activity',
-                          '활동 내역',
-                          Icons.emoji_events_outlined,
+                        AnimatedAlign(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutCubic,
+                          alignment: _activeTab == 'items'
+                              ? Alignment.centerLeft
+                              : Alignment.centerRight,
+                          child: FractionallySizedBox(
+                            widthFactor: 0.5,
+                            child: Container(
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.interactive,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _tabBtn('items', '내 물건', Icons.inventory_2_outlined),
+                            _tabBtn(
+                              'activity',
+                              '활동 내역',
+                              Icons.emoji_events_outlined,
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -748,10 +775,24 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Tab content
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Column(
-                    children: _activeTab == 'items'
-                        ? _buildMyFoundItems()
-                        : _buildMyActivities(),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.03),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                    child: Column(
+                      key: ValueKey(_activeTab),
+                      children: _activeTab == 'items'
+                          ? _buildMyFoundItems()
+                          : _buildMyActivities(),
+                    ),
                   ),
                 ),
                 // Quick links
@@ -1184,12 +1225,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _activeTab = id),
+        behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.interactive : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

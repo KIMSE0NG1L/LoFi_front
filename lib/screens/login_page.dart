@@ -91,71 +91,76 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               children: [
                 // Top brand area
-                Container(
-                  color: AppColors.primary,
-                  width: double.infinity,
+                Padding(
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).padding.top + 40,
-                    bottom: 40,
+                    bottom: 24,
                   ),
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/app_logo_T_white_N.png',
-                        width: 75,
-                        height: 75,
+                        'assets/app_logo_T.png',
+                        width: 150,
+                        height: 150,
                       ),
-                      SizedBox(height: 12),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         '구해조!',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textDark,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 6),
-                      Text(
+                      const SizedBox(height: 6),
+                      const Text(
                         '분실물 퀴즈 매칭 서비스',
-                        style: TextStyle(color: Colors.white54, fontSize: 14),
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                       ),
                     ],
                   ),
                 ),
                 // Form card
-                Transform.translate(
-                  offset: const Offset(0, -16),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 20,
-                          ),
-                        ],
-                        border: Border.all(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
                           color: Colors.black.withOpacity(0.05),
+                          blurRadius: 20,
                         ),
+                      ],
+                      border: Border.all(
+                        color: Colors.black.withOpacity(0.05),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '로그인',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '로그인',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
                           ),
-                          const SizedBox(height: 20),
-                          _label('이메일'),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 28,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.interactive,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _label('이메일'),
                           _inputField(
                             controller: _emailCtrl,
                             hint: '이메일을 입력하세요',
@@ -187,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: AppColors.interactive,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
@@ -255,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
                                     TextSpan(
                                       text: '회원가입',
                                       style: TextStyle(
-                                        color: AppColors.primary,
+                                        color: AppColors.interactive,
                                         fontWeight: FontWeight.w600,
                                         decoration: TextDecoration.underline,
                                       ),
@@ -283,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -355,7 +360,7 @@ class _LoginPageState extends State<LoginPage> {
       hintText: hint,
       filled: true,
       fillColor: AppColors.background,
-      prefixIcon: Icon(prefixIcon, color: AppColors.textFaint, size: 18),
+      prefixIcon: Icon(prefixIcon, color: AppColors.interactive, size: 18),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -446,7 +451,7 @@ class _LoginPageState extends State<LoginPage> {
                         _resetEmailCtrl.clear();
                       }),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.interactive,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -474,7 +479,7 @@ class _LoginPageState extends State<LoginPage> {
                       prefixIcon: const Icon(
                         Icons.email_outlined,
                         size: 18,
-                        color: AppColors.textFaint,
+                        color: AppColors.interactive,
                       ),
                       filled: true,
                       fillColor: AppColors.background,
@@ -506,7 +511,7 @@ class _LoginPageState extends State<LoginPage> {
                       icon: const Icon(Icons.send_outlined, size: 16),
                       label: const Text('재설정 링크 전송'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.interactive,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
-import 'screens/onboarding_screen.dart';
 import 'screens/home_page.dart';
 import 'screens/lost_items_page.dart';
 import 'screens/lost_reports_page.dart';
@@ -24,25 +23,20 @@ import 'widgets/bottom_nav.dart';
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
-GoRouter _buildRouter(bool onboardingDone, AuthProvider authProvider) => GoRouter(
+GoRouter _buildRouter(AuthProvider authProvider) => GoRouter(
   navigatorKey: _rootKey,
-  initialLocation: onboardingDone ? '/' : '/onboarding',
+  initialLocation: '/',
   refreshListenable: authProvider,
   redirect: (ctx, state) {
     final loggedIn = authProvider.isLoggedIn;
     final location = state.uri.toString();
     final isAuthRoute = location == '/login' || location == '/signup';
 
-    if (location == '/onboarding') return null;
     if (!loggedIn && !isAuthRoute) return '/login';
     if (loggedIn && isAuthRoute) return '/';
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/onboarding',
-      builder: (ctx, state) => const OnboardingScreen(),
-    ),
     ShellRoute(
       navigatorKey: _shellKey,
       builder: (ctx, state, child) {
@@ -165,9 +159,8 @@ class _AppShellBodyState extends State<_AppShellBody> {
 }
 
 class App extends StatefulWidget {
-  final bool onboardingDone;
   final AuthProvider authProvider;
-  const App({super.key, this.onboardingDone = true, required this.authProvider});
+  const App({super.key, required this.authProvider});
 
   @override
   State<App> createState() => _AppState();
@@ -179,7 +172,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    _router = _buildRouter(widget.onboardingDone, widget.authProvider);
+    _router = _buildRouter(widget.authProvider);
   }
 
   @override

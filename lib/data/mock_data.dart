@@ -4,7 +4,13 @@ const List<Map<String, dynamic>> categories = [
   {'id': 'electronics', 'name': '전자기기', 'icon': '📱'},
   {'id': 'clothing', 'name': '의류', 'icon': '👔'},
   {'id': 'wallet', 'name': '지갑/카드', 'icon': '👛'},
+  {'id': 'bag', 'name': '가방', 'icon': '🎒'},
   {'id': 'accessories', 'name': '액세서리', 'icon': '⌚'},
+  {'id': 'glasses', 'name': '안경/선글라스', 'icon': '👓'},
+  {'id': 'umbrella', 'name': '우산', 'icon': '☂️'},
+  {'id': 'books', 'name': '도서/문구', 'icon': '📚'},
+  {'id': 'keys', 'name': '열쇠', 'icon': '🔑'},
+  {'id': 'documents', 'name': '서류/카드', 'icon': '🪪'},
   {'id': 'etc', 'name': '기타', 'icon': '📦'},
 ];
 
@@ -173,7 +179,13 @@ const Map<String, String> categoryEmoji = {
   'electronics': '📱',
   'wallet': '👛',
   'clothing': '👔',
+  'bag': '🎒',
   'accessories': '⌚',
+  'glasses': '👓',
+  'umbrella': '☂️',
+  'books': '📚',
+  'keys': '🔑',
+  'documents': '🪪',
   'etc': '📦',
 };
 
@@ -181,7 +193,13 @@ const Map<String, int> categoryColors = {
   'electronics': 0xFF5B9BF2,
   'wallet': 0xFFF28BAA,
   'clothing': 0xFF8FC7EF,
+  'bag': 0xFFE8A87C,
   'accessories': 0xFFAE8FE8,
+  'glasses': 0xFF7FB3A8,
+  'umbrella': 0xFF6FA8E8,
+  'books': 0xFFD98E73,
+  'keys': 0xFFE8C84A,
+  'documents': 0xFF9AA5C4,
   'etc': 0xFFE8C48A,
 };
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart' show categoryEmoji, categoryColors;
 import '../models/models.dart';
 import '../services/items_service.dart';
+import '../services/kakao_location_service.dart';
 import '../widgets/quiz_modal.dart';
 import '../widgets/surfaces.dart';
 
@@ -27,6 +30,8 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   final ItemsService _itemsService = ItemsService();
+  final KakaoLocationService _kakaoService = KakaoLocationService();
+  final TextEditingController _searchCtrl = TextEditingController();
 
   LostItem? _activeItem;
   String _activeFilter = 'all';
@@ -37,18 +42,36 @@ class _MapPageState extends State<MapPage> {
   bool _loading = true;
   String? _error;
 
+  Timer? _placeDebounce;
+  List<KakaoPlace> _placeResults = [];
+  bool _searchingPlaces = false;
+  LatLng? _searchedPlace;
+  String? _searchedPlaceName;
+
   List<LostItem> get _filtered {
     if (_searchQuery.trim().isEmpty) return _items;
     final q = _searchQuery.toLowerCase();
-    return _items.where((item) => item.location.toLowerCase().contains(q)).toList();
+    return _items
+        .where((item) =>
+            item.location.toLowerCase().contains(q) ||
+            item.title.toLowerCase().contains(q) ||
+            item.description.toLowerCase().contains(q))
+        .toList();
   }
 
   final _filters = [
     {'id': 'all', 'label': '전체', 'icon': Icons.map_outlined},
-    {'id': 'electronics', 'label': '전자기기', 'icon': Icons.smartphone_outlined},
-    {'id': 'wallet', 'label': '지갑', 'icon': Icons.account_balance_wallet_outlined},
+    {'id': 'electronics', 'label': '전자기기', 'icon': Icons.devices_other},
     {'id': 'clothing', 'label': '의류', 'icon': Icons.checkroom_outlined},
+    {'id': 'wallet', 'label': '지갑/카드', 'icon': Icons.wallet_outlined},
+    {'id': 'bag', 'label': '가방', 'icon': Icons.work_outline_rounded},
     {'id': 'accessories', 'label': '액세서리', 'icon': Icons.watch_outlined},
+    {'id': 'glasses', 'label': '안경/선글라스', 'icon': Icons.remove_red_eye_outlined},
+    {'id': 'umbrella', 'label': '우산', 'icon': Icons.umbrella_outlined},
+    {'id': 'books', 'label': '도서/문구', 'icon': Icons.menu_book_outlined},
+    {'id': 'keys', 'label': '열쇠', 'icon': Icons.vpn_key_outlined},
+    {'id': 'documents', 'label': '서류/카드', 'icon': Icons.badge_outlined},
+    {'id': 'etc', 'label': '기타', 'icon': Icons.inventory_2_outlined},
   ];
 
   @override
@@ -56,6 +79,64 @@ class _MapPageState extends State<MapPage> {
     super.initState();
     _resolveMyLocation();
     _loadItems();
+  }
+
+  @override
+  void dispose() {
+    _placeDebounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => _searchQuery = value);
+
+    _placeDebounce?.cancel();
+    if (value.trim().isEmpty) {
+      setState(() {
+        _placeResults = [];
+        _searchingPlaces = false;
+      });
+      return;
+    }
+
+    _placeDebounce = Timer(const Duration(milliseconds: 400), () async {
+      setState(() => _searchingPlaces = true);
+      try {
+        final results = await _kakaoService.search(value.trim());
+        if (!mounted) return;
+        setState(() => _placeResults = results);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _placeResults = []);
+      } finally {
+        if (mounted) setState(() => _searchingPlaces = false);
+      }
+    });
+  }
+
+  void _selectPlace(KakaoPlace place) {
+    final point = LatLng(place.lat, place.lng);
+    _mapController.move(point, 16);
+    _searchCtrl.text = place.name;
+    setState(() {
+      _searchedPlace = point;
+      _searchedPlaceName = place.name;
+      _placeResults = [];
+      _searchQuery = '';
+    });
+  }
+
+  void _clearSearch() {
+    _placeDebounce?.cancel();
+    _searchCtrl.clear();
+    setState(() {
+      _searchQuery = '';
+      _placeResults = [];
+      _searchingPlaces = false;
+      _searchedPlace = null;
+      _searchedPlaceName = null;
+    });
   }
 
   Future<void> _loadItems() async {
@@ -129,6 +210,7 @@ class _MapPageState extends State<MapPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         leading: IconButton(
@@ -157,51 +239,66 @@ class _MapPageState extends State<MapPage> {
           // 검색 영역
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: neumorphicDecoration(radius: 14),
-                  child: DropdownButton<String>(
-                    value: _activeFilter,
-                    isDense: true,
-                    underline: const SizedBox(),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted, size: 18),
-                    style: const TextStyle(color: AppColors.textDark, fontSize: 13, fontWeight: FontWeight.w500),
-                    items: _filters
-                        .map((f) => DropdownMenuItem(
-                              value: f['id'] as String,
-                              child: Text(f['label'] as String),
-                            ))
-                        .toList(),
-                    onChanged: (v) {
-                      setState(() => _activeFilter = v!);
-                      _loadItems();
-                    },
-                  ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: neumorphicDecoration(radius: 14),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: _onSearchChanged,
+                style: const TextStyle(color: AppColors.textDark, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: '위치 검색 (예: 강남역)',
+                  hintStyle: const TextStyle(color: AppColors.textFaint, fontSize: 13),
+                  prefixIcon: _searchingPlaces
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.interactive),
+                          ),
+                        )
+                      : const Icon(Icons.search_rounded, color: AppColors.textFaint, size: 18),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, color: AppColors.textFaint, size: 18),
+                          onPressed: _clearSearch,
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: neumorphicDecoration(radius: 14),
-                    child: TextField(
-                      onChanged: (v) => setState(() => _searchQuery = v),
-                      style: const TextStyle(color: AppColors.textDark, fontSize: 13),
-                      decoration: const InputDecoration(
-                        hintText: '위치 검색',
-                        hintStyle: TextStyle(color: AppColors.textFaint, fontSize: 13),
-                        prefixIcon: Icon(Icons.search_rounded, color: AppColors.textFaint, size: 18),
-                        border: InputBorder.none,
-                        isCollapsed: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
+          // 장소 검색 결과 (카카오 장소검색)
+          if (_placeResults.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              constraints: const BoxConstraints(maxHeight: 220),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                itemCount: _placeResults.length,
+                separatorBuilder: (_, __) => Divider(height: 1, color: Colors.black.withOpacity(0.05)),
+                itemBuilder: (_, i) {
+                  final place = _placeResults[i];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined, color: AppColors.interactive, size: 20),
+                    title: Text(place.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textDark)),
+                    subtitle: Text(place.address, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                    onTap: () => _selectPlace(place),
+                  );
+                },
+              ),
+            ),
           // 카테고리 필터 칩
           SizedBox(
             height: 40,
@@ -277,6 +374,18 @@ class _MapPageState extends State<MapPage> {
                         ),
                         MarkerLayer(
                           markers: [
+                            if (_searchedPlace != null)
+                              Marker(
+                                point: _searchedPlace!,
+                                width: 40,
+                                height: 40,
+                                alignment: Alignment.topCenter,
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.redAccent,
+                                  size: 40,
+                                ),
+                              ),
                             if (_myLocation != null)
                               Marker(
                                 point: _myLocation!,
@@ -401,11 +510,17 @@ class _MapPageState extends State<MapPage> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.textFaint),
+                      Icon(
+                        _searchedPlaceName != null ? Icons.location_on : Icons.info_outline_rounded,
+                        size: 14,
+                        color: _searchedPlaceName != null ? Colors.redAccent : AppColors.textFaint,
+                      ),
                       const SizedBox(width: 6),
-                      const Text(
-                        '핀을 탭하면 상세 정보를 볼 수 있어요',
-                        style: TextStyle(color: AppColors.textFaint, fontSize: 12),
+                      Text(
+                        _searchedPlaceName != null
+                            ? '검색한 위치: $_searchedPlaceName'
+                            : '핀을 탭하면 상세 정보를 볼 수 있어요',
+                        style: const TextStyle(color: AppColors.textFaint, fontSize: 12),
                       ),
                     ],
                   ),
