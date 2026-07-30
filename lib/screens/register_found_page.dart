@@ -24,9 +24,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _detailLocationCtrl = TextEditingController();
-  final List<Map<String, String>> _quizzes = [
-    {'question': '', 'answer': ''},
-  ];
+  final List<Map<String, dynamic>> _quizzes = [];
 
   String _selectedCategory = '';
   KakaoPlace? _selectedPlace;
@@ -38,7 +36,13 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     {'id': 'electronics', 'name': '전자기기', 'icon': Icons.devices_other},
     {'id': 'clothing', 'name': '의류', 'icon': Icons.checkroom_outlined},
     {'id': 'wallet', 'name': '지갑/카드', 'icon': Icons.wallet_outlined},
+    {'id': 'bag', 'name': '가방', 'icon': Icons.work_outline_rounded},
     {'id': 'accessories', 'name': '액세서리', 'icon': Icons.watch_outlined},
+    {'id': 'glasses', 'name': '안경/선글라스', 'icon': Icons.remove_red_eye_outlined},
+    {'id': 'umbrella', 'name': '우산', 'icon': Icons.umbrella_outlined},
+    {'id': 'books', 'name': '도서/문구', 'icon': Icons.menu_book_outlined},
+    {'id': 'keys', 'name': '열쇠', 'icon': Icons.vpn_key_outlined},
+    {'id': 'documents', 'name': '서류/카드', 'icon': Icons.badge_outlined},
     {'id': 'etc', 'name': '기타', 'icon': Icons.inventory_2_outlined},
   ];
 
@@ -71,26 +75,23 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     }
 
     final quizzes = _quizzes
-        .where(
-          (quiz) =>
-              quiz['question']!.trim().isNotEmpty &&
-              quiz['answer']!.trim().isNotEmpty,
-        )
-        .map(
-          (quiz) => {
-            'question': quiz['question']!.trim(),
-            'type': 'text',
-            'correctAnswer': quiz['answer']!.trim(),
-          },
-        )
+        .where((quiz) {
+          final question = (quiz['question'] as String).trim();
+          final options = quiz['options'] as List<String>;
+          return question.isNotEmpty && options.every((o) => o.trim().isNotEmpty);
+        })
+        .map((quiz) {
+          final options = (quiz['options'] as List<String>)
+              .map((o) => o.trim())
+              .toList();
+          return {
+            'question': (quiz['question'] as String).trim(),
+            'type': 'multiple',
+            'options': options,
+            'correctAnswer': '${quiz['correctIndex']}',
+          };
+        })
         .toList();
-
-    if (quizzes.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('퀴즈를 1개 이상 입력해주세요.')));
-      return;
-    }
 
     setState(() => _submitting = true);
     try {
@@ -158,6 +159,8 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _imagePickerSection(),
+            const SizedBox(height: 16),
             _sectionCard('기본 정보', [
               _label('물품 이름 *'),
               _field(_titleCtrl, '예: 아이폰 15 Pro'),
@@ -179,7 +182,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
                       color: active ? Colors.white : AppColors.textMuted,
                     ),
                     label: Text(category['name'] as String),
-                    selectedColor: AppColors.primary,
+                    selectedColor: AppColors.interactive,
                     labelStyle: TextStyle(
                       color: active ? Colors.white : AppColors.textMuted,
                       fontSize: 12,
@@ -200,11 +203,9 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               _field(_descCtrl, '물건의 특징, 상태 등을 자세히 적어주세요.', maxLines: 4),
             ]),
             const SizedBox(height: 16),
-            _imagePickerSection(),
-            const SizedBox(height: 16),
-            _sectionCard('퀴즈 설정', [
+            _sectionCard('퀴즈 설정 (선택)', [
               const Text(
-                '주인이 맞는지 확인할 수 있는 질문과 정답을 입력해주세요.',
+                '주인이 맞는지 확인할 질문과 보기 3개를 추가하면 더 안전하게 인증할 수 있어요. 분실자는 보기 중 정답 하나를 고르면 됩니다. 추가하지 않으면 채팅으로 바로 연결돼요.',
                 style: TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 12,
@@ -214,6 +215,9 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               const SizedBox(height: 16),
               ..._quizzes.asMap().entries.map((entry) {
                 final index = entry.key;
+                final quiz = entry.value;
+                final options = quiz['options'] as List<String>;
+                final correctIndex = quiz['correctIndex'] as int;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
@@ -235,28 +239,76 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
                               color: AppColors.primary,
                             ),
                           ),
-                          if (_quizzes.length > 1)
-                            IconButton(
-                              onPressed: () =>
-                                  setState(() => _quizzes.removeAt(index)),
-                              icon: const Icon(Icons.close, size: 16),
-                            ),
+                          IconButton(
+                            onPressed: () =>
+                                setState(() => _quizzes.removeAt(index)),
+                            icon: const Icon(Icons.close, size: 16),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       TextField(
                         onChanged: (value) =>
-                            setState(() => _quizzes[index]['question'] = value),
+                            setState(() => quiz['question'] = value),
                         decoration: _inputDecoration('질문을 입력하세요.'),
                         style: const TextStyle(fontSize: 13),
                       ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        onChanged: (value) =>
-                            setState(() => _quizzes[index]['answer'] = value),
-                        decoration: _inputDecoration('정답을 입력하세요.'),
-                        style: const TextStyle(fontSize: 13),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '보기 (정답에 체크하세요)',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      const SizedBox(height: 8),
+                      ...List.generate(3, (optIndex) {
+                        final isCorrect = correctIndex == optIndex;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => setState(
+                                  () => quiz['correctIndex'] = optIndex,
+                                ),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isCorrect
+                                        ? AppColors.interactive
+                                        : Colors.white,
+                                    border: Border.all(
+                                      color: isCorrect
+                                          ? AppColors.interactive
+                                          : Colors.black.withOpacity(0.15),
+                                    ),
+                                  ),
+                                  child: isCorrect
+                                      ? const Icon(
+                                          Icons.check,
+                                          size: 14,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  onChanged: (value) =>
+                                      setState(() => options[optIndex] = value),
+                                  decoration: _inputDecoration('보기 ${optIndex + 1}'),
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 );
@@ -264,7 +316,15 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
               if (_quizzes.length < 3)
                 OutlinedButton.icon(
                   onPressed: () => setState(
-                    () => _quizzes.add({'question': '', 'answer': ''}),
+                    () => _quizzes.add({
+                      'question': '',
+                      'options': ['', '', ''],
+                      'correctIndex': 0,
+                    }),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.interactive,
+                    side: const BorderSide(color: AppColors.interactive),
                   ),
                   icon: const Icon(Icons.add_circle_outline, size: 18),
                   label: const Text('퀴즈 추가하기'),
@@ -287,7 +347,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
                     : const Icon(Icons.upload_rounded, size: 18),
                 label: Text(_submitting ? '등록 중...' : '습득물 등록하기'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.interactive,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -343,6 +403,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
+        width: double.infinity,
         height: 180,
         decoration: BoxDecoration(
           color: Colors.white,

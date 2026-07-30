@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +32,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
   int _totalPages = 1;
   String? _error;
   late final ScrollController _scrollCtrl;
+  Timer? _searchDebounce;
 
   final Map<String, List<String>> _locationKeywords = {
     'subway': ['역', '지하철', '호선'],
@@ -39,21 +42,18 @@ class _LostItemsPageState extends State<LostItemsPage> {
     'station': ['역 근처', '출구'],
   };
 
-  List<LostItem> get _filtered => _items.where((item) {
-    final matchCat =
-        _selectedCategory.isEmpty || item.category == _selectedCategory;
-    final matchSearch =
-        _searchQuery.isEmpty ||
-        item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().contains(_searchQuery.toLowerCase());
-    final matchLoc =
-        _selectedLocation.isEmpty ||
-        (_locationKeywords[_selectedLocation]?.any(
-              (k) => item.location.contains(k) || item.description.contains(k),
-            ) ??
-            false);
-    return matchCat && matchSearch && matchLoc;
-  }).toList();
+  /// 카테고리/검색어/위치 필터를 서버에 반영해 목록을 다시 불러온다.
+  void _applyFilters(VoidCallback updateState) {
+    setState(updateState);
+    _loadItems();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      _applyFilters(() => _searchQuery = value);
+    });
+  }
 
   int get _activeFilters =>
       (_selectedCategory.isNotEmpty ? 1 : 0) +
@@ -69,6 +69,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
   @override
   void dispose() {
     _scrollCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -81,7 +82,13 @@ class _LostItemsPageState extends State<LostItemsPage> {
   Future<void> _loadItems() async {
     setState(() { _loading = true; _error = null; _page = 1; });
     try {
-      final result = await _itemsService.fetchItems(page: 1, limit: 20);
+      final result = await _itemsService.fetchItems(
+        page: 1,
+        limit: 20,
+        category: _selectedCategory.isEmpty ? null : _selectedCategory,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        locationKeywords: _locationKeywords[_selectedLocation],
+      );
       if (!mounted) return;
       setState(() {
         _items = result.items;
@@ -101,7 +108,13 @@ class _LostItemsPageState extends State<LostItemsPage> {
     setState(() => _loadingMore = true);
     try {
       final next = _page + 1;
-      final result = await _itemsService.fetchItems(page: next, limit: 20);
+      final result = await _itemsService.fetchItems(
+        page: next,
+        limit: 20,
+        category: _selectedCategory.isEmpty ? null : _selectedCategory,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        locationKeywords: _locationKeywords[_selectedLocation],
+      );
       if (!mounted) return;
       setState(() {
         _items.addAll(result.items);
@@ -116,7 +129,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final filtered = _items;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -153,7 +166,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
                       ],
                     ),
                     child: TextField(
-                      onChanged: (v) => setState(() => _searchQuery = v),
+                      onChanged: _onSearchChanged,
                       decoration: InputDecoration(
                         hintText: '분실물 검색...',
                         prefixIcon: Icon(
@@ -184,34 +197,6 @@ class _LostItemsPageState extends State<LostItemsPage> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: GestureDetector(
-              onTap: () => context.push('/lost-reports'),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.amber.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bolt_rounded, color: Colors.amber, size: 18),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        '내 물건을 잃어버렸나요? 현상금 걸고 분실 신고하기',
-                        style: TextStyle(color: AppColors.textDark, fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: Colors.amber.shade800, size: 18),
-                  ],
-                ),
-              ),
-            ),
-          ),
           // Active filters
           if (_activeFilters > 0)
             Padding(
@@ -228,15 +213,15 @@ class _LostItemsPageState extends State<LostItemsPage> {
                             (c) => c['id'] == _selectedCategory,
                           )['name']
                           as String,
-                      () => setState(() => _selectedCategory = ''),
+                      () => _applyFilters(() => _selectedCategory = ''),
                     ),
                   if (_selectedLocation.isNotEmpty)
                     _filterChip(
                       _locationLabel(_selectedLocation),
-                      () => setState(() => _selectedLocation = ''),
+                      () => _applyFilters(() => _selectedLocation = ''),
                     ),
                   GestureDetector(
-                    onTap: () => setState(() {
+                    onTap: () => _applyFilters(() {
                       _selectedCategory = '';
                       _selectedLocation = '';
                     }),
@@ -621,8 +606,9 @@ class _LostItemsPageState extends State<LostItemsPage> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => setState(() {
+            onTap: () => _applyFilters(() {
               _selectedCategory = '';
+              _selectedLocation = '';
               _searchQuery = '';
             }),
             child: const Text(
@@ -685,7 +671,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
                       children: categories.map((cat) {
                         final active = _selectedCategory == cat['id'];
                         return GestureDetector(
-                          onTap: () => setState(
+                          onTap: () => _applyFilters(
                             () => _selectedCategory = active
                                 ? ''
                                 : cat['id'] as String,
@@ -742,7 +728,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
                           ].map((loc) {
                             final active = _selectedLocation == loc['id'];
                             return GestureDetector(
-                              onTap: () => setState(
+                              onTap: () => _applyFilters(
                                 () => _selectedLocation = active
                                     ? ''
                                     : loc['id']!,
@@ -781,7 +767,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => setState(() {
+                            onPressed: () => _applyFilters(() {
                               _selectedCategory = '';
                               _selectedLocation = '';
                             }),

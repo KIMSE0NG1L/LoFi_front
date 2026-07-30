@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/activity_service.dart';
 import '../services/items_service.dart';
+import '../services/ranking_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/surfaces.dart';
 
@@ -22,6 +23,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ItemsService _itemsService = ItemsService();
   final ActivityService _activityService = ActivityService();
+  final RankingService _rankingService = RankingService();
 
   String _activeTab = 'items';
   bool _notifEnabled = true;
@@ -31,39 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _itemsError;
   bool _activityLoading = true;
   String? _activityError;
-
-  final _myItems = [
-    {
-      'id': 1,
-      'title': '갤럭시 워치 6',
-      'date': '2026.04.28',
-      'status': '매칭 완료',
-      'emoji': '⌚',
-      'matched': true,
-    },
-    {
-      'id': 2,
-      'title': '검정 우산',
-      'date': '2026.05.01',
-      'status': '대기 중',
-      'emoji': '☂️',
-      'matched': false,
-    },
-    {
-      'id': 3,
-      'title': '에어팟 프로',
-      'date': '2026.04.15',
-      'status': '찾는 중',
-      'emoji': '🎧',
-      'matched': false,
-    },
-  ];
-
-  final _myActivity = [
-    {'text': '갤럭시 워치 6 매칭 완료!', 'time': '3일 전', 'pts': '+50', 'emoji': '🎉'},
-    {'text': '검정 우산 등록', 'time': '5일 전', 'pts': '+10', 'emoji': '📦'},
-    {'text': '일일 접속 보너스', 'time': '오늘', 'pts': '+5', 'emoji': '⭐'},
-  ];
+  int? _myRank;
 
   static const _termsContent = '''제1조 (목적)
 이 약관은 옛다 띱! 서비스의 이용에 관한 조건 및 절차, 권리와 의무를 규정합니다.
@@ -102,6 +72,19 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _loadMyFoundItems();
     _loadMyActivities();
+    _loadMyRank();
+  }
+
+  Future<void> _loadMyRank() async {
+    final userId = context.read<AuthProvider>().user?.id;
+    if (userId == null) return;
+    try {
+      final rank = await _rankingService.fetchMyRank(userId);
+      if (!mounted) return;
+      setState(() => _myRank = rank);
+    } catch (_) {
+      // 랭킹 조회 실패는 조용히 무시 — 화면엔 '-'로 표시됨.
+    }
   }
 
   Future<void> _loadMyFoundItems() async {
@@ -730,7 +713,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               _statCell(
                                 Icons.emoji_events_outlined,
                                 const Color(0xFFF59E0B),
-                                '12위',
+                                _myRank != null ? '$_myRank위' : '-',
                                 '랭킹',
                               ),
                               const Icon(

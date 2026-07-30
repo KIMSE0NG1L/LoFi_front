@@ -24,6 +24,7 @@ class ItemsService {
   Future<ItemsResult> fetchItems({
     String? category,
     String? search,
+    List<String>? locationKeywords,
     int page = 1,
     int limit = 20,
   }) async {
@@ -38,7 +39,17 @@ class ItemsService {
       query = query.eq('category', category);
     }
     if (search != null && search.isNotEmpty) {
-      query = query.ilike('title', '%$search%');
+      final term = _escapeLike(search);
+      query = query.or(
+        'title.ilike.%$term%,description.ilike.%$term%,location.ilike.%$term%',
+      );
+    }
+    if (locationKeywords != null && locationKeywords.isNotEmpty) {
+      final clause = locationKeywords
+          .map((k) => _escapeLike(k))
+          .map((k) => 'location.ilike.%$k%,description.ilike.%$k%')
+          .join(',');
+      query = query.or(clause);
     }
 
     final res = await query
@@ -282,6 +293,17 @@ class ItemsService {
           },
         )
         .toList();
+  }
+
+  /// ilike 패턴(%, _)과 or() 필터 구분자(,)를 이스케이프해서
+  /// 사용자 입력을 안전하게 검색어로 쓸 수 있게 한다.
+  String _escapeLike(String value) {
+    return value
+        .replaceAll('\\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_')
+        .replaceAll(',', ' ')
+        .trim();
   }
 
   String _requireUid() {

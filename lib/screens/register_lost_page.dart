@@ -36,7 +36,13 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
     {'id': 'electronics', 'name': '전자기기', 'icon': '📱'},
     {'id': 'clothing', 'name': '의류', 'icon': '👔'},
     {'id': 'wallet', 'name': '지갑/카드', 'icon': '👛'},
+    {'id': 'bag', 'name': '가방', 'icon': '🎒'},
     {'id': 'accessories', 'name': '액세서리', 'icon': '⌚'},
+    {'id': 'glasses', 'name': '안경/선글라스', 'icon': '👓'},
+    {'id': 'umbrella', 'name': '우산', 'icon': '☂️'},
+    {'id': 'books', 'name': '도서/문구', 'icon': '📚'},
+    {'id': 'keys', 'name': '열쇠', 'icon': '🔑'},
+    {'id': 'documents', 'name': '서류/카드', 'icon': '🪪'},
     {'id': 'etc', 'name': '기타', 'icon': '📦'},
   ];
 
@@ -143,17 +149,8 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Notice
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.blue.shade100)),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Icons.info_outline, color: Colors.blue.shade600, size: 18),
-              const SizedBox(width: 10),
-              Expanded(child: Text('분실물이 등록되면 습득자가 목록에서 검색해 연락할 수 있습니다. 최대한 상세하게 입력해주세요.', style: TextStyle(color: Colors.blue.shade800, fontSize: 12, height: 1.5))),
-            ]),
-          ),
-          const SizedBox(height: 20),
+          _imagePickerSection(),
+          const SizedBox(height: 16),
           _sectionCard('분실물 정보', [
             _label('물품 이름 *'),
             _field(_titleCtrl, '예) 갤럭시 버즈 2 프로'),
@@ -168,9 +165,9 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: active ? AppColors.primary : AppColors.background,
+                      color: active ? AppColors.interactive : AppColors.background,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: active ? AppColors.primary : Colors.black.withOpacity(0.08)),
+                      border: Border.all(color: active ? AppColors.interactive : Colors.black.withOpacity(0.08)),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(cat['icon']!, style: const TextStyle(fontSize: 14)),
@@ -196,8 +193,6 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
             _label('사례 메모 (선택)'),
             _field(_rewardCtrl, '예) 감사 선물 드립니다, 사례금 지급 가능'),
           ]),
-          const SizedBox(height: 16),
-          _imagePickerSection(),
           const SizedBox(height: 16),
           _sectionCard('현상금 걸기 (선택)', [
             Text(
@@ -233,7 +228,7 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _submitting ? null : _submit,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.interactive, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
               child: _submitting
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -305,6 +300,7 @@ class _RegisterLostPageState extends State<RegisterLostPage> {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
+        width: double.infinity,
         height: 160,
         decoration: BoxDecoration(
           color: Colors.white,

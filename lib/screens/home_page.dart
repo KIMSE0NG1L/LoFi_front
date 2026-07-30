@@ -153,8 +153,8 @@ class _HomePageState extends State<HomePage> {
                     child: _personaCard(
                       imagePath: 'assets/찾아주세요.png',
                       title: '잃어버렸어요',
-                      subtitle: '분실물 등록하고\n찾아보세요',
-                      onTap: () => context.push('/lost-items'),
+                      subtitle: '현상금 걸고\n찾아보세요',
+                      onTap: () => context.push('/register-lost'),
                     ),
                   ),
                   const SizedBox(width: 12),

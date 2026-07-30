@@ -26,6 +26,7 @@ class _QuizModalState extends State<QuizModal> {
   String _textAnswer = '';
   List<int> _usedQuizzes = [];
   bool _startingChat = false;
+  int _pointsEarned = 0;
 
   @override
   void initState() {
@@ -128,7 +129,11 @@ class _QuizModalState extends State<QuizModal> {
       final isCorrect = data['correct'] == true;
 
       if (isCorrect) {
-        setState(() => _step = 'success');
+        final pointsEarned = (data['pointsEarned'] as num?)?.toInt() ?? 0;
+        setState(() {
+          _pointsEarned = pointsEarned;
+          _step = 'success';
+        });
       } else {
         if (_attempts.length >= 3) {
           setState(() => _step = 'failed');
@@ -222,6 +227,7 @@ class _QuizModalState extends State<QuizModal> {
   }
 
   Widget _buildIntro() {
+    final hasQuiz = widget.item.quizzes.isNotEmpty;
     return Column(
       children: [
         if (widget.item.imageUrl != null)
@@ -253,9 +259,9 @@ class _QuizModalState extends State<QuizModal> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          '퀴즈 인증 시작',
-          style: TextStyle(
+        Text(
+          hasQuiz ? '퀴즈 인증 시작' : '바로 채팅하기',
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
@@ -298,10 +304,10 @@ class _QuizModalState extends State<QuizModal> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         '인증 방식',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
@@ -309,8 +315,8 @@ class _QuizModalState extends State<QuizModal> {
                         ),
                       ),
                       Text(
-                        '랜덤 퀴즈 3회 도전',
-                        style: TextStyle(
+                        hasQuiz ? '랜덤 퀴즈 3회 도전' : '퀴즈 없이 채팅으로 확인',
+                        style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 12,
                         ),
@@ -326,9 +332,11 @@ class _QuizModalState extends State<QuizModal> {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  '• 문제는 랜덤으로 출제됩니다\n• 최대 3번까지 도전 가능\n• 1문제만 맞추면 인증 성공!',
-                  style: TextStyle(
+                child: Text(
+                  hasQuiz
+                      ? '• 문제는 랜덤으로 출제됩니다\n• 최대 3번까지 도전 가능\n• 1문제만 맞추면 인증 성공!'
+                      : '• 습득자가 별도 확인 질문을 설정하지 않았어요\n• 채팅으로 소유 여부를 직접 확인해 보세요',
+                  style: const TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 12,
                     height: 1.6,
@@ -342,7 +350,7 @@ class _QuizModalState extends State<QuizModal> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _startQuiz,
+            onPressed: hasQuiz ? _startQuiz : (_startingChat ? null : _startChat),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -351,14 +359,29 @@ class _QuizModalState extends State<QuizModal> {
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('퀴즈 시작하기', style: TextStyle(fontWeight: FontWeight.w600)),
-                SizedBox(width: 8),
-                Icon(Icons.emoji_events_outlined, size: 18),
-              ],
-            ),
+            child: hasQuiz
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('퀴즈 시작하기', style: TextStyle(fontWeight: FontWeight.w600)),
+                      SizedBox(width: 8),
+                      Icon(Icons.emoji_events_outlined, size: 18),
+                    ],
+                  )
+                : _startingChat
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('채팅 시작하기', style: TextStyle(fontWeight: FontWeight.w600)),
+                          SizedBox(width: 8),
+                          Icon(Icons.chat_bubble_outline, size: 18),
+                        ],
+                      ),
           ),
         ),
       ],
@@ -605,14 +628,14 @@ class _QuizModalState extends State<QuizModal> {
               color: AppColors.success.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.emoji_events, color: AppColors.success, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.emoji_events, color: AppColors.success, size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  '+50 포인트 획득!',
-                  style: TextStyle(
+                  '+$_pointsEarned 포인트 획득!',
+                  style: const TextStyle(
                     color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),

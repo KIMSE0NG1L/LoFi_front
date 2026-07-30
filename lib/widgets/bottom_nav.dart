@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
-import 'surfaces.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -19,6 +18,7 @@ class _BottomNavState extends State<BottomNav> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.25),
       isScrollControlled: true,
       builder: (sheetContext) =>
           _RegisterSheet(onClose: () => Navigator.of(sheetContext).pop()),
@@ -26,9 +26,10 @@ class _BottomNavState extends State<BottomNav> {
   }
 
   static const _slotCount = 5;
-  static const _indicatorSize = 36.0;
+  static const _indicatorWidth = 56.0;
+  static const _indicatorHeight = 56.0;
   // 홈=0, 찾기=1, (센터 등록 버튼=2, 인디케이터 없음), 채팅=3, MY=4
-  static const _indicatorTop = 8.0;
+  static const _indicatorTop = 6.0;
 
   int _activeSlot(String location, bool loggedIn) {
     if (location == '/') return 0;
@@ -48,26 +49,30 @@ class _BottomNavState extends State<BottomNav> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: SafeArea(
         top: false,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              height: 68,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withOpacity(0.6)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                height: 68,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.55),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white.withOpacity(0.6)),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
                   final slotWidth = constraints.maxWidth / _slotCount;
                   return Stack(
                     children: [
@@ -76,14 +81,14 @@ class _BottomNavState extends State<BottomNav> {
                         curve: Curves.easeOutCubic,
                         top: _indicatorTop,
                         left: activeSlot == -1
-                            ? (slotWidth - _indicatorSize) / 2
-                            : activeSlot * slotWidth + (slotWidth - _indicatorSize) / 2,
+                            ? (slotWidth - _indicatorWidth) / 2
+                            : activeSlot * slotWidth + (slotWidth - _indicatorWidth) / 2,
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 200),
                           opacity: activeSlot == -1 ? 0 : 1,
                           child: Container(
-                            width: _indicatorSize,
-                            height: _indicatorSize,
+                            width: _indicatorWidth,
+                            height: _indicatorHeight,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
@@ -115,6 +120,7 @@ class _BottomNavState extends State<BottomNav> {
                     ],
                   );
                 },
+                ),
               ),
             ),
           ),
@@ -218,8 +224,11 @@ class _RegisterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassContainer(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -244,32 +253,25 @@ class _RegisterSheet extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () {
                     onClose();
-                    context.push('/register-found');
+                    context.push('/register-lost');
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.upload_rounded, color: Colors.white, size: 20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        const SizedBox(height: 14),
-                        const Text('습득물 등록', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
-                        const SizedBox(height: 4),
-                        Text('주운 물건의\n주인 찾아주기', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, height: 1.5)),
-                        const SizedBox(height: 12),
-                        Text('+50pts →', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w500)),
                       ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Image.asset('assets/분실물신고.png', fit: BoxFit.cover),
+                      ),
                     ),
                   ),
                 ),
@@ -279,33 +281,25 @@ class _RegisterSheet extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () {
                     onClose();
-                    context.push('/register-lost');
+                    context.push('/register-found');
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.black.withOpacity(0.08)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.warning_amber_rounded, color: AppColors.primary, size: 20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        const SizedBox(height: 14),
-                        const Text('분실물 신고', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 15)),
-                        const SizedBox(height: 4),
-                        const Text('잃어버린 물건\n신고하기', style: TextStyle(color: AppColors.textLight, fontSize: 11, height: 1.5)),
-                        const SizedBox(height: 12),
-                        const Text('알림 받기 →', style: TextStyle(color: AppColors.textLight, fontSize: 11, fontWeight: FontWeight.w500)),
                       ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Image.asset('assets/습득물신고.png', fit: BoxFit.cover),
+                      ),
                     ),
                   ),
                 ),

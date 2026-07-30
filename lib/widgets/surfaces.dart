@@ -12,6 +12,9 @@ class GlassContainer extends StatelessWidget {
   final double blur;
   final double opacity;
 
+  /// 유리 위에 덧씌울 선택적 그라데이션 (예: 하단만 어둡게).
+  final Gradient? overlayGradient;
+
   const GlassContainer({
     super.key,
     required this.child,
@@ -19,6 +22,7 @@ class GlassContainer extends StatelessWidget {
     this.padding,
     this.blur = 20,
     this.opacity = 0.65,
+    this.overlayGradient,
   });
 
   @override
@@ -28,7 +32,6 @@ class GlassContainer extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
-          padding: padding,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(opacity),
             borderRadius: borderRadius,
@@ -41,7 +44,20 @@ class GlassContainer extends StatelessWidget {
               ),
             ],
           ),
-          child: child,
+          child: Stack(
+            children: [
+              if (overlayGradient != null)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: overlayGradient),
+                  ),
+                ),
+              Padding(
+                padding: padding ?? EdgeInsets.zero,
+                child: child,
+              ),
+            ],
+          ),
         ),
       ),
     );
