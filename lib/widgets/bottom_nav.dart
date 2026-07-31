@@ -33,7 +33,7 @@ class _BottomNavState extends State<BottomNav> {
 
   int _activeSlot(String location, bool loggedIn) {
     if (location == '/') return 0;
-    if (location.startsWith('/lost-items')) return 1;
+    if (location.startsWith('/lost-items') || location.startsWith('/lost-reports')) return 1;
     if (location.startsWith('/chats')) return 3;
     if (location.startsWith(loggedIn ? '/profile' : '/login')) return 4;
     return -1;
@@ -316,13 +316,8 @@ class _RegisterSheet extends StatelessWidget {
                 border: Border.all(color: Colors.black.withOpacity(0.08)),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.close, size: 16, color: AppColors.textMuted),
-                  const SizedBox(width: 6),
-                  Text('취소', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                ],
+              child: const Center(
+                child: Text('취소', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
               ),
             ),
           ),

@@ -117,9 +117,11 @@ GoRouter _buildRouter(AuthProvider authProvider) => GoRouter(
 const _tabOrder = ['/', '/lost-items', '/chats', '/profile'];
 
 int _tabIndexFor(String location) {
-  if (location == '/') return 0;
+  // 분실 신고 목록도 "찾기" 탭 안의 화면이라 같은 인덱스로 취급.
+  final normalized = location.startsWith('/lost-reports') ? '/lost-items' : location;
+  if (normalized == '/') return 0;
   for (var i = 1; i < _tabOrder.length; i++) {
-    if (location.startsWith(_tabOrder[i])) return i;
+    if (normalized.startsWith(_tabOrder[i])) return i;
   }
   return -1;
 }

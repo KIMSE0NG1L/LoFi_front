@@ -28,9 +28,14 @@ class _ProfilePageState extends State<ProfilePage> {
   String _activeTab = 'items';
   bool _notifEnabled = true;
   List<LostItem> _myFoundItems = [];
+  List<LostReport> _myLostReports = [];
   List<ActivityItem> _myActivities = [];
   bool _itemsLoading = true;
   String? _itemsError;
+  String _deletingFoundItemId = '';
+  bool _lostReportsLoading = true;
+  String? _lostReportsError;
+  String _deletingLostReportId = '';
   bool _activityLoading = true;
   String? _activityError;
   int? _myRank;
@@ -71,6 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadMyFoundItems();
+    _loadMyLostReports();
     _loadMyActivities();
     _loadMyRank();
   }
@@ -102,6 +108,86 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _itemsError = e.toString());
     } finally {
       if (mounted) setState(() => _itemsLoading = false);
+    }
+  }
+
+  Future<void> _deleteFoundItem(LostItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('습득물을 삭제할까요?'),
+        content: const Text('삭제하면 되돌릴 수 없고, 등록된 퀴즈도 함께 삭제됩니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deletingFoundItemId = item.id);
+    try {
+      await _itemsService.deleteFoundItem(item.id);
+      if (!mounted) return;
+      setState(() => _myFoundItems.removeWhere((i) => i.id == item.id));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('습득물이 삭제되었습니다.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _deletingFoundItemId = '');
+    }
+  }
+
+  Future<void> _loadMyLostReports() async {
+    setState(() {
+      _lostReportsLoading = true;
+      _lostReportsError = null;
+    });
+
+    try {
+      final reports = await _itemsService.fetchMyLostReports();
+      if (!mounted) return;
+      setState(() => _myLostReports = reports);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _lostReportsError = e.toString());
+    } finally {
+      if (mounted) setState(() => _lostReportsLoading = false);
+    }
+  }
+
+  Future<void> _deleteLostReport(LostReport report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('신고를 삭제할까요?'),
+        content: const Text('삭제하면 되돌릴 수 없습니다. 에스크로된 현상금이 있다면 포인트로 환불됩니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deletingLostReportId = report.id);
+    try {
+      await _itemsService.deleteLostReport(report.id);
+      if (!mounted) return;
+      setState(() => _myLostReports.removeWhere((r) => r.id == report.id));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고가 삭제되었습니다.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _deletingLostReportId = '');
     }
   }
 
@@ -185,7 +271,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               if (quizzes.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('?댁쫰瑜?1媛??댁긽 ?낅젰?댁＜?몄슂.')),
+                  const SnackBar(content: Text('퀴즈를 1개 이상 입력해주세요.')),
                 );
                 return;
               }
@@ -217,8 +303,18 @@ class _ProfilePageState extends State<ProfilePage> {
               }
             }
 
-            return GlassContainer(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
@@ -404,7 +500,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     _editLabel('상세 설명 *'),
                     _editField(descCtrl, '상세 설명', maxLines: 4),
                     const SizedBox(height: 16),
-                    _editLabel('?댁쫰 *'),
+                    _editLabel('퀴즈 *'),
                     ...quizRows.asMap().entries.map((entry) {
                       final index = entry.key;
                       final row = entry.value;
@@ -422,7 +518,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    '?댁쫰 ${index + 1}',
+                                    '퀴즈 ${index + 1}',
                                     style: const TextStyle(
                                       color: AppColors.primary,
                                       fontSize: 13,
@@ -462,7 +558,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   }),
                                 ),
                         icon: const Icon(Icons.add_circle_outline, size: 18),
-                        label: const Text('?댁쫰 異붽??섍린'),
+                        label: const Text('퀴즈 추가하기'),
                       ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -790,7 +886,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Column(
                       key: ValueKey(_activeTab),
                       children: _activeTab == 'items'
-                          ? _buildMyFoundItems()
+                          ? [
+                              ..._buildMyFoundItems(),
+                              const SizedBox(height: 20),
+                              ..._buildMyLostReports(),
+                            ]
                           : _buildMyActivities(),
                     ),
                   ),
@@ -1044,28 +1144,185 @@ class _ProfilePageState extends State<ProfilePage> {
               color: AppColors.primary,
               tooltip: '편집',
             ),
-            GestureDetector(
-              onTap: () => _openEditFoundItem(item),
-              child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.subtle,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                '등록됨',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              ),
+            IconButton(
+              onPressed: _deletingFoundItemId == item.id ? null : () => _deleteFoundItem(item),
+              icon: _deletingFoundItemId == item.id
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red),
+                    )
+                  : const Icon(Icons.delete_outline),
+              color: Colors.red.shade400,
+              tooltip: '삭제',
             ),
           ],
         ),
       );
     }).toList();
+  }
+
+  List<Widget> _buildMyLostReports() {
+    final header = const Padding(
+      padding: EdgeInsets.only(bottom: 10),
+      child: Text(
+        '내가 신고한 분실물',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+
+    if (_lostReportsLoading) {
+      return [
+        header,
+        const Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+      ];
+    }
+
+    if (_lostReportsError != null) {
+      return [
+        header,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: neumorphicDecoration(radius: 18),
+          child: Column(
+            children: [
+              Text(
+                _lostReportsError!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _loadMyLostReports,
+                child: const Text('다시 시도'),
+              ),
+            ],
+          ),
+        ),
+      ];
+    }
+
+    if (_myLostReports.isEmpty) {
+      return [
+        header,
+        GestureDetector(
+          onTap: () => context.push('/register-lost'),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: neumorphicDecoration(radius: 18),
+            child: const Row(
+              children: [
+                Icon(Icons.search_rounded, color: AppColors.textFaint, size: 32),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '아직 신고한 분실물이 없어요.',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '분실물을 신고하고 도움을 받아보세요!',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: AppColors.textFaint),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return [
+      header,
+      ..._myLostReports.map((report) {
+        final deleting = _deletingLostReportId == report.id;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: neumorphicDecoration(radius: 18),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.search_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        color: AppColors.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_formatDate(report.createdAt)} · ${report.location} · ${_lostStatusLabel(report.status)}',
+                      style: const TextStyle(
+                        color: AppColors.textFaint,
+                        fontSize: 11,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: deleting ? null : () => _deleteLostReport(report),
+                icon: deleting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red),
+                      )
+                    : const Icon(Icons.delete_outline),
+                color: Colors.red.shade400,
+                tooltip: '삭제',
+              ),
+            ],
+          ),
+        );
+      }),
+    ];
+  }
+
+  String _lostStatusLabel(String status) {
+    switch (status) {
+      case 'matched':
+        return '매칭 완료';
+      case 'closed':
+        return '종료됨';
+      case 'searching':
+      default:
+        return '찾는 중';
+    }
   }
 
   List<Widget> _buildMyActivities() {
@@ -1099,7 +1356,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: _loadMyActivities,
-                child: const Text('?ㅼ떆 ?쒕룄'),
+                child: const Text('다시 시도'),
               ),
             ],
           ),
@@ -1262,6 +1519,13 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Image.asset(imagePath, height: 110, fit: BoxFit.contain),
         ),

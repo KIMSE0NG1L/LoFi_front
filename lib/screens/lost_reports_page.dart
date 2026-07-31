@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../services/chat_service.dart';
 import '../services/items_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/find_tab_switcher.dart';
 import '../widgets/surfaces.dart';
 
 /// 다른 사람이 등록한 분실 신고를 둘러보고, 도움을 줄 수 있으면 채팅을 거는 화면.
@@ -19,6 +20,47 @@ class LostReportsPage extends StatefulWidget {
 }
 
 class _LostReportsPageState extends State<LostReportsPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+        ),
+        title: const Text('분실 신고 둘러보기', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+            onPressed: () => context.push('/register-lost'),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          const FindTabSwitcher(isFoundActive: false),
+          const Expanded(child: LostReportsBody()),
+        ],
+      ),
+    );
+  }
+}
+
+/// 분실 신고 목록 자체 — Scaffold 없이 순수 콘텐츠만 담당해서
+/// [LostReportsPage](단독 라우트)와 찾기 탭 내부 전환 양쪽에서 재사용한다.
+class LostReportsBody extends StatefulWidget {
+  final String searchQuery;
+
+  const LostReportsBody({super.key, this.searchQuery = ''});
+
+  @override
+  State<LostReportsBody> createState() => _LostReportsBodyState();
+}
+
+class _LostReportsBodyState extends State<LostReportsBody> {
   final ItemsService _itemsService = ItemsService();
   final ChatService _chatService = ChatService();
 
@@ -26,6 +68,7 @@ class _LostReportsPageState extends State<LostReportsPage> {
   bool _loading = true;
   String? _error;
   String _startingChatFor = '';
+  String _deletingFor = '';
 
   @override
   void initState() {
@@ -33,10 +76,20 @@ class _LostReportsPageState extends State<LostReportsPage> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant LostReportsBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.searchQuery != widget.searchQuery) {
+      _load();
+    }
+  }
+
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final reports = await _itemsService.fetchPublicLostReports();
+      final reports = await _itemsService.fetchPublicLostReports(
+        search: widget.searchQuery.isEmpty ? null : widget.searchQuery,
+      );
       if (!mounted) return;
       setState(() => _reports = reports);
     } catch (e) {
@@ -75,7 +128,40 @@ class _LostReportsPageState extends State<LostReportsPage> {
     }
   }
 
+  Future<void> _deleteReport(LostReport report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('신고를 삭제할까요?'),
+        content: const Text('삭제하면 되돌릴 수 없습니다. 에스크로된 현상금이 있다면 포인트로 환불됩니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deletingFor = report.id);
+    try {
+      await _itemsService.deleteLostReport(report.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      setState(() => _reports.removeWhere((r) => r.id == report.id));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고가 삭제되었습니다.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _deletingFor = '');
+    }
+  }
+
   void _openDetail(LostReport report) {
+    final currentUserId = context.read<AuthProvider>().user?.id;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -83,44 +169,32 @@ class _LostReportsPageState extends State<LostReportsPage> {
       builder: (sheetContext) => _DetailSheet(
         report: report,
         starting: _startingChatFor == report.id,
+        deleting: _deletingFor == report.id,
+        isOwner: currentUserId != null && currentUserId == report.ownerId,
         onChat: () => _startChat(report),
+        onDelete: () => _deleteReport(report),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-        ),
-        title: const Text('분실 신고 둘러보기', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-            onPressed: () => context.push('/register-lost'),
-          ),
-        ],
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_error != null) {
+      return _errorState();
+    }
+    if (_reports.isEmpty) {
+      return _emptyState();
+    }
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        itemCount: _reports.length,
+        itemBuilder: (ctx, i) => _reportCard(_reports[i]),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _error != null
-              ? _errorState()
-              : _reports.isEmpty
-                  ? _emptyState()
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                        itemCount: _reports.length,
-                        itemBuilder: (ctx, i) => _reportCard(_reports[i]),
-                      ),
-                    ),
     );
   }
 
@@ -223,9 +297,19 @@ class _LostReportsPageState extends State<LostReportsPage> {
 class _DetailSheet extends StatelessWidget {
   final LostReport report;
   final bool starting;
+  final bool deleting;
+  final bool isOwner;
   final VoidCallback onChat;
+  final VoidCallback onDelete;
 
-  const _DetailSheet({required this.report, required this.starting, required this.onChat});
+  const _DetailSheet({
+    required this.report,
+    required this.starting,
+    required this.deleting,
+    required this.isOwner,
+    required this.onChat,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -269,21 +353,39 @@ class _DetailSheet extends StatelessWidget {
               Text('사례: ${report.reward}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ],
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: starting ? null : onChat,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            if (isOwner)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: deleting ? null : onDelete,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: deleting
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.red))
+                      : const Icon(Icons.delete_outline),
+                  label: Text(deleting ? '삭제 중...' : '신고 삭제하기', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                child: starting
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('제가 봤어요! 채팅하기', style: TextStyle(fontWeight: FontWeight.bold)),
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: starting ? null : onChat,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: starting
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('제가 봤어요! 채팅하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
               ),
-            ),
           ],
         ),
       ),

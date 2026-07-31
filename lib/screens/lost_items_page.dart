@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/items_service.dart';
+import '../widgets/find_tab_switcher.dart';
 import '../widgets/quiz_modal.dart';
 import '../widgets/surfaces.dart';
+import 'lost_reports_page.dart' show LostReportsBody;
 
 class LostItemsPage extends StatefulWidget {
   const LostItemsPage({super.key});
@@ -21,10 +22,8 @@ class LostItemsPage extends StatefulWidget {
 class _LostItemsPageState extends State<LostItemsPage> {
   final ItemsService _itemsService = ItemsService();
 
-  String _selectedCategory = '';
-  String _selectedLocation = '';
+  bool _showingFound = true;
   String _searchQuery = '';
-  bool _showFilter = false;
   List<LostItem> _items = [];
   bool _loading = true;
   bool _loadingMore = false;
@@ -34,30 +33,13 @@ class _LostItemsPageState extends State<LostItemsPage> {
   late final ScrollController _scrollCtrl;
   Timer? _searchDebounce;
 
-  final Map<String, List<String>> _locationKeywords = {
-    'subway': ['역', '지하철', '호선'],
-    'bus': ['버스', '정류장'],
-    'cafe': ['카페', '음식점', '레스토랑', '식당'],
-    'mall': ['쇼핑몰', '백화점', '몰', '월드'],
-    'station': ['역 근처', '출구'],
-  };
-
-  /// 카테고리/검색어/위치 필터를 서버에 반영해 목록을 다시 불러온다.
-  void _applyFilters(VoidCallback updateState) {
-    setState(updateState);
-    _loadItems();
-  }
-
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 400), () {
-      _applyFilters(() => _searchQuery = value);
+      setState(() => _searchQuery = value);
+      _loadItems();
     });
   }
-
-  int get _activeFilters =>
-      (_selectedCategory.isNotEmpty ? 1 : 0) +
-      (_selectedLocation.isNotEmpty ? 1 : 0);
 
   @override
   void initState() {
@@ -85,9 +67,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
       final result = await _itemsService.fetchItems(
         page: 1,
         limit: 20,
-        category: _selectedCategory.isEmpty ? null : _selectedCategory,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        locationKeywords: _locationKeywords[_selectedLocation],
       );
       if (!mounted) return;
       setState(() {
@@ -111,9 +91,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
       final result = await _itemsService.fetchItems(
         page: next,
         limit: 20,
-        category: _selectedCategory.isEmpty ? null : _selectedCategory,
         search: _searchQuery.isEmpty ? null : _searchQuery,
-        locationKeywords: _locationKeywords[_selectedLocation],
       );
       if (!mounted) return;
       setState(() {
@@ -147,9 +125,13 @@ class _LostItemsPageState extends State<LostItemsPage> {
       ),
       body: Column(
         children: [
+          FindTabSwitcher(
+            isFoundActive: _showingFound,
+            onChanged: (toFound) => setState(() => _showingFound = toFound),
+          ),
           // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(
               children: [
                 Expanded(
@@ -168,7 +150,7 @@ class _LostItemsPageState extends State<LostItemsPage> {
                     child: TextField(
                       onChanged: _onSearchChanged,
                       decoration: InputDecoration(
-                        hintText: '분실물 검색...',
+                        hintText: _showingFound ? '습득물 검색...' : '분실 신고 검색...',
                         prefixIcon: Icon(
                           Icons.search,
                           color: AppColors.textLight,
@@ -185,107 +167,69 @@ class _LostItemsPageState extends State<LostItemsPage> {
                 ),
                 const SizedBox(width: 8),
                 _iconButton(
-                  badge: _activeFilters > 0 ? _activeFilters.toString() : null,
-                  icon: Icons.tune_rounded,
-                  onTap: () => setState(() => _showFilter = true),
-                ),
-                const SizedBox(width: 8),
-                _iconButton(
                   icon: Icons.map_outlined,
                   onTap: () => context.push('/map'),
                 ),
               ],
             ),
           ),
-          // Active filters
-          if (_activeFilters > 0)
+          if (_showingFound)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
               child: Row(
                 children: [
-                  const Text(
-                    '필터: ',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  Text(
+                    '습득물 목록',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  if (_selectedCategory.isNotEmpty)
-                    _filterChip(
-                      categories.firstWhere(
-                            (c) => c['id'] == _selectedCategory,
-                          )['name']
-                          as String,
-                      () => _applyFilters(() => _selectedCategory = ''),
-                    ),
-                  if (_selectedLocation.isNotEmpty)
-                    _filterChip(
-                      _locationLabel(_selectedLocation),
-                      () => _applyFilters(() => _selectedLocation = ''),
-                    ),
-                  GestureDetector(
-                    onTap: () => _applyFilters(() {
-                      _selectedCategory = '';
-                      _selectedLocation = '';
-                    }),
-                    child: const Text(
-                      '전체 초기화',
-                      style: TextStyle(
-                        color: AppColors.textLight,
-                        fontSize: 12,
-                        decoration: TextDecoration.underline,
-                      ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '(${filtered.length})',
+                    style: const TextStyle(
+                      color: AppColors.textLight,
+                      fontSize: 13,
                     ),
                   ),
                 ],
               ),
-            ),
-          // List
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-            child: Row(
+            )
+          else
+            const SizedBox(height: 12),
+          Expanded(
+            child: IndexedStack(
+              index: _showingFound ? 0 : 1,
+              sizing: StackFit.expand,
               children: [
-                Text(
-                  '분실물 목록',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '(${filtered.length})',
-                  style: const TextStyle(
-                    color: AppColors.textLight,
-                    fontSize: 13,
-                  ),
-                ),
+                _loading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      )
+                    : _error != null
+                    ? _errorState()
+                    : filtered.isEmpty
+                    ? _emptyState()
+                    : ListView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                        itemCount: filtered.length + (_loadingMore ? 1 : 0),
+                        itemBuilder: (ctx, i) {
+                          if (i == filtered.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                            );
+                          }
+                          return _itemCard(filtered[i]);
+                        },
+                      ),
+                LostReportsBody(searchQuery: _searchQuery),
               ],
             ),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  )
-                : _error != null
-                ? _errorState()
-                : filtered.isEmpty
-                ? _emptyState()
-                : ListView.builder(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                    itemCount: filtered.length + (_loadingMore ? 1 : 0),
-                    itemBuilder: (ctx, i) {
-                      if (i == filtered.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
-                        );
-                      }
-                      return _itemCard(filtered[i]);
-                    },
-                  ),
-          ),
-          if (_showFilter) _buildFilterSheet(),
         ],
       ),
     );
@@ -336,31 +280,6 @@ class _LostItemsPageState extends State<LostItemsPage> {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(String label, VoidCallback onRemove) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-          const SizedBox(width: 4),
-          GestureDetector(
-            onTap: onRemove,
-            child: const Icon(Icons.close, color: Colors.white, size: 14),
-          ),
         ],
       ),
     );
@@ -606,11 +525,10 @@ class _LostItemsPageState extends State<LostItemsPage> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => _applyFilters(() {
-              _selectedCategory = '';
-              _selectedLocation = '';
-              _searchQuery = '';
-            }),
+            onTap: () {
+              setState(() => _searchQuery = '');
+              _loadItems();
+            },
             child: const Text(
               '전체 보기',
               style: TextStyle(
@@ -624,208 +542,6 @@ class _LostItemsPageState extends State<LostItemsPage> {
         ],
       ),
     );
-  }
-
-  Widget _buildFilterSheet() {
-    return GestureDetector(
-      onTap: () => setState(() => _showFilter = false),
-      child: Stack(
-        children: [
-          Container(color: Colors.black54),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: () {},
-              child: GlassContainer(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      '카테고리',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: categories.map((cat) {
-                        final active = _selectedCategory == cat['id'];
-                        return GestureDetector(
-                          onTap: () => _applyFilters(
-                            () => _selectedCategory = active
-                                ? ''
-                                : cat['id'] as String,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? AppColors.primary
-                                  : AppColors.background,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: active
-                                    ? AppColors.primary
-                                    : Colors.black.withOpacity(0.08),
-                              ),
-                            ),
-                            child: Text(
-                              cat['name'] as String,
-                              style: TextStyle(
-                                color: active
-                                    ? Colors.white
-                                    : AppColors.textMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      '위치',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children:
-                          [
-                            {'id': 'subway', 'name': '지하철'},
-                            {'id': 'bus', 'name': '버스 정류장'},
-                            {'id': 'cafe', 'name': '카페/음식점'},
-                            {'id': 'mall', 'name': '쇼핑몰'},
-                            {'id': 'station', 'name': '역 근처'},
-                          ].map((loc) {
-                            final active = _selectedLocation == loc['id'];
-                            return GestureDetector(
-                              onTap: () => _applyFilters(
-                                () => _selectedLocation = active
-                                    ? ''
-                                    : loc['id']!,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? AppColors.primary
-                                      : AppColors.background,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: active
-                                        ? AppColors.primary
-                                        : Colors.black.withOpacity(0.08),
-                                  ),
-                                ),
-                                child: Text(
-                                  loc['name']!,
-                                  style: TextStyle(
-                                    color: active
-                                        ? Colors.white
-                                        : AppColors.textMuted,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _applyFilters(() {
-                              _selectedCategory = '';
-                              _selectedLocation = '';
-                            }),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              side: BorderSide(
-                                color: Colors.black.withOpacity(0.1),
-                              ),
-                            ),
-                            child: const Text(
-                              '초기화',
-                              style: TextStyle(color: AppColors.textMuted),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () =>
-                                setState(() => _showFilter = false),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: const Text(
-                              '적용',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _locationLabel(String id) {
-    const labels = {
-      'subway': '지하철',
-      'bus': '버스 정류장',
-      'cafe': '카페/음식점',
-      'mall': '쇼핑몰',
-      'station': '역 근처',
-    };
-    return labels[id] ?? id;
   }
 
   String _formatDate(DateTime d) =>

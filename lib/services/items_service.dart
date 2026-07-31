@@ -137,6 +137,15 @@ class ItemsService {
     return _lostItemFromJson(data);
   }
 
+  Future<void> deleteFoundItem(String id) async {
+    final uid = _requireUid();
+    final owned = await supabase.from('found_items').select('finder_id').eq('id', id).maybeSingle();
+    if (owned == null) throw const AppException('아이템을 찾을 수 없습니다.');
+    if (owned['finder_id'] != uid) throw const AppException('권한이 없습니다.');
+
+    await supabase.from('found_items').delete().eq('id', id);
+  }
+
   Future<LostItem> updateFoundItem({
     required String id,
     required String category,
@@ -249,6 +258,10 @@ class ItemsService {
 
   Future<void> cancelLostReport(String id) async {
     await supabase.rpc('cancel_lost_item', params: {'p_lost_item_id': id});
+  }
+
+  Future<void> deleteLostReport(String id) async {
+    await supabase.rpc('delete_lost_item', params: {'p_lost_item_id': id});
   }
 
   Future<void> resolveLostReport(String id, String finderId) async {

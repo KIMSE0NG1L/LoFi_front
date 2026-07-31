@@ -159,18 +159,18 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // 습득물 등록 시 지도 위치를 아직 입력받지 않아 mapPos가 항상 (0,0)이라,
-  // 핀이 한 점에 겹치지 않도록 아이템 id로 안정적인 위치를 흩뿌려 배치.
-  // 할것.txt "지도 리얼데이터" 항목에서 실제 좌표로 교체 예정.
+  // mapPos.x/y는 등록 시 카카오 장소 검색으로 얻은 실제 경도(lng)/위도(lat).
+  // 옛날에 좌표 없이 등록된 아이템(0,0)만 겹치지 않도록 id 기반으로 흩뿌려 배치한다.
   LatLng _toLatLng(MapPos pos, String id) {
+    if (pos.x != 0 || pos.y != 0) {
+      return LatLng(pos.y, pos.x);
+    }
+
     const latMax = 37.70, latMin = 37.42;
     const lngMin = 126.76, lngMax = 127.18;
-    double x = pos.x, y = pos.y;
-    if (x == 0 && y == 0) {
-      final h = id.hashCode;
-      x = (h % 80 + 10).toDouble();
-      y = ((h ~/ 80) % 80 + 10).toDouble();
-    }
+    final h = id.hashCode;
+    final x = (h % 80 + 10).toDouble();
+    final y = ((h ~/ 80) % 80 + 10).toDouble();
     return LatLng(
       latMax - (y / 100) * (latMax - latMin),
       lngMin + (x / 100) * (lngMax - lngMin),
@@ -221,17 +221,6 @@ class _MapPageState extends State<MapPage> {
           '지도로 찾기',
           style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 17),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: neumorphicDecoration(radius: 12),
-              child: const Icon(Icons.tune_rounded, color: AppColors.textDark, size: 18),
-            ),
-          ),
-        ],
         automaticallyImplyLeading: false,
       ),
       body: Column(
