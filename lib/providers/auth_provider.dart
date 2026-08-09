@@ -38,7 +38,9 @@ class AuthProvider extends ChangeNotifier {
           _user = await _authService.me(email: email);
           await loadFavorites();
           notifyListeners();
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('소셜로그인 후 프로필 로딩 실패: $e');
+        }
       } else if (state.event == AuthChangeEvent.signedOut) {
         _user = null;
         _favorites = [];

@@ -21,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _resetSent = false;
   bool _kakaoLoading = false;
   bool _googleLoading = false;
+  bool _showEmailForm = false;
 
   Future<void> _submit() async {
     if (_emailCtrl.text.isEmpty || _pwCtrl.text.isEmpty) {
@@ -87,23 +88,29 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: const Color(0xFFFEFEFE),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
+          LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Align(
+                  alignment: const Alignment(0, -0.3),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                 // Top brand area
                 Padding(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 40,
-                    bottom: 24,
+                    top: MediaQuery.of(context).padding.top + 4,
+                    bottom: 8,
                   ),
                   child: Column(
                     children: [
                       Image.asset(
                         'assets/app_logo_T.png',
-                        width: 150,
-                        height: 150,
+                        width: 300,
+                        height: 300,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       const Text(
                         '구해조!',
                         style: TextStyle(
@@ -113,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       const Text(
                         '분실물 퀴즈 매칭 서비스',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 14),
@@ -142,25 +149,58 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '로그인',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
+                        _socialButton(
+                          label: '카카오로 시작하기',
+                          backgroundColor: const Color(0xFFFEE500),
+                          textColor: const Color(0xFF191600),
+                          icon: const Icon(Icons.chat_bubble, size: 18, color: Color(0xFF191600)),
+                          loading: _kakaoLoading,
+                          onTap: _loginWithKakao,
                         ),
-                        const SizedBox(height: 6),
-                        Container(
-                          width: 28,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: AppColors.interactive,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                        const SizedBox(height: 10),
+                        _socialButton(
+                          label: 'Google로 시작하기',
+                          backgroundColor: Colors.white,
+                          textColor: AppColors.textDark,
+                          icon: Image.asset('assets/google_logo.png', width: 18, height: 18),
+                          border: Border.all(color: Colors.black.withOpacity(0.12)),
+                          loading: _googleLoading,
+                          onTap: _loginWithGoogle,
                         ),
-                        const SizedBox(height: 20),
-                        _label('이메일'),
+                        const SizedBox(height: 10),
+                        if (!_showEmailForm)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => setState(() => _showEmailForm = true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.interactive,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text(
+                                '이메일로 로그인',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                            ),
+                          )
+                        else ...[
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text('또는', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+                              ),
+                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _label('이메일'),
                           _inputField(
                             controller: _emailCtrl,
                             hint: '이메일을 입력하세요',
@@ -217,59 +257,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10),
-                                child: Text('또는', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
-                              ),
-                              Expanded(child: Divider(color: Colors.black.withOpacity(0.08))),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _socialButton(
-                            label: '카카오로 시작하기',
-                            backgroundColor: const Color(0xFFFEE500),
-                            textColor: const Color(0xFF191600),
-                            loading: _kakaoLoading,
-                            onTap: _loginWithKakao,
-                          ),
-                          const SizedBox(height: 10),
-                          _socialButton(
-                            label: 'Google로 시작하기',
-                            backgroundColor: Colors.white,
-                            textColor: AppColors.textDark,
-                            border: Border.all(color: Colors.black.withOpacity(0.12)),
-                            loading: _googleLoading,
-                            onTap: _loginWithGoogle,
-                          ),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => context.push('/signup'),
-                              child: RichText(
-                                text: const TextSpan(
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 14,
-                                  ),
-                                  children: [
-                                    TextSpan(text: '계정이 없으신가요? '),
-                                    TextSpan(
-                                      text: '회원가입',
-                                      style: TextStyle(
-                                        color: AppColors.interactive,
-                                        fontWeight: FontWeight.w600,
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
                           const SizedBox(height: 12),
                           Center(
                             child: GestureDetector(
@@ -285,11 +272,40 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ],
+                        const SizedBox(height: 20),
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => context.push('/signup'),
+                            child: RichText(
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 14,
+                                ),
+                                children: [
+                                  TextSpan(text: '계정이 없으신가요? '),
+                                  TextSpan(
+                                    text: '회원가입',
+                                    style: TextStyle(
+                                      color: AppColors.interactive,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       ),
                     ),
                   ),
                 const SizedBox(height: 24),
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
           if (_showResetModal) _buildResetModal(),
@@ -304,6 +320,7 @@ class _LoginPageState extends State<LoginPage> {
     required Color textColor,
     required bool loading,
     required VoidCallback onTap,
+    Widget? icon,
     Border? border,
   }) {
     return SizedBox(
@@ -326,7 +343,13 @@ class _LoginPageState extends State<LoginPage> {
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2, color: textColor),
               )
-            : Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[icon, const SizedBox(width: 8)],
+                  Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                ],
+              ),
       ),
     );
   }

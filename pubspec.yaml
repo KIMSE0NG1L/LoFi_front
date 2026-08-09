@@ -45,6 +45,7 @@ flutter:
     - assets/app_logo_T.png
     - assets/app_logo_f.png
     - assets/app_logo_T_white_N.png
+    - assets/google_logo.png
     - assets/상단배경.png
     - assets/지도.png
     - assets/찾아주세요.png
