@@ -126,6 +126,15 @@ class _QuizModalState extends State<QuizModal> {
       }) as Map<String, dynamic>;
 
       if (!mounted) return;
+
+      if (data['alreadyMatched'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 다른 분이 찾아간 물건이에요.')),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
+
       final isCorrect = data['correct'] == true;
 
       if (isCorrect) {
