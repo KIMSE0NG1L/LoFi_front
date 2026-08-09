@@ -2,8 +2,8 @@ import '../models/models.dart';
 import 'supabase_client.dart';
 
 const _threadSelect = '''
-  id, created_at,
-  found_items(id, title, category),
+  id, created_at, user_a_id,
+  found_items(id, title, category, status, finder_id),
   lost_items(id, title, category, status, owner_id),
   user_a:profiles!chat_threads_user_a_id_fkey(id, name, avatar),
   user_b:profiles!chat_threads_user_b_id_fkey(id, name, avatar),
@@ -131,7 +131,19 @@ class ChatService {
       lostItemId: isLostItem ? lostItem['id'] as String? : null,
       lostItemOwnerId: isLostItem ? lostItem['owner_id'] as String? : null,
       lostItemStatus: isLostItem ? lostItem['status'] as String? : null,
+      foundItemId: isLostItem ? null : item?['id'] as String?,
+      foundItemStatus: isLostItem ? null : item?['status'] as String?,
+      foundItemFinderId: isLostItem ? null : item?['finder_id'] as String?,
+      userAId: json['user_a_id'] as String?,
     );
+  }
+
+  /// 퀴즈 없이 채팅으로만 매칭된 습득물을, 물건을 받은 쪽(채팅을 먼저 건
+  /// user_a)이 직접 "받았어요"로 확정한다. 확정 시 습득자에게 포인트가 지급됨.
+  Future<void> completeFoundItemHandoff(String threadId) async {
+    await supabase.rpc('complete_found_item_handoff', params: {
+      'p_thread_id': threadId,
+    });
   }
 
   DateTime? _latestMessageAt(dynamic rawMessages) {

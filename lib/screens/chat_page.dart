@@ -32,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _sending = false;
   bool _showAppointment = false;
   bool _resolvingBounty = false;
+  bool _completingHandoff = false;
   String? _error;
 
   @override
@@ -193,6 +194,37 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Future<void> _completeFoundHandoff() async {
+    final thread = _thread;
+    if (thread?.foundItemId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('매칭 완료 처리'),
+        content: Text('${thread!.otherUser}님에게 물건을 받으셨나요? 확인하면 습득자에게 포인트가 지급됩니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('취소')),
+          ElevatedButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('확인')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _completingHandoff = true);
+    try {
+      await _chatService.completeFoundItemHandoff(thread!.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('매칭 완료! 습득자에게 포인트가 지급되었습니다.')));
+      await _loadThread();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _completingHandoff = false);
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
@@ -300,6 +332,7 @@ class _ChatPageState extends State<ChatPage> {
             children: [
               _safetyNotice(),
               if (_canResolveBounty) _resolveBountyBanner(),
+              if (_canCompleteFoundHandoff) _completeFoundHandoffBanner(),
               if (_messages.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 48),
@@ -377,6 +410,16 @@ class _ChatPageState extends State<ChatPage> {
     return myId != null && myId == thread.lostItemOwnerId;
   }
 
+  /// 퀴즈로 매칭된 습득물은 채팅방이 생긴 시점에 이미 status가 'available'이
+  /// 아니므로 여기엔 뜨지 않고, 퀴즈 없이 바로 채팅으로 연결된 경우에만 노출됨.
+  bool get _canCompleteFoundHandoff {
+    final thread = _thread;
+    if (thread == null || thread.foundItemId == null) return false;
+    if (thread.foundItemStatus != 'available') return false;
+    final myId = context.read<AuthProvider>().user?.id;
+    return myId != null && myId == thread.userAId;
+  }
+
   Widget _resolveBountyBanner() {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -412,6 +455,48 @@ class _ChatPageState extends State<ChatPage> {
               child: _resolvingBounty
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('매칭 완료 처리', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _completeFoundHandoffBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '물건을 받으셨나요?',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '받은 걸 확인하면 매칭이 완료되고 습득자에게 포인트가 지급됩니다.',
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _completingHandoff ? null : _completeFoundHandoff,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _completingHandoff
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('물건 받았어요', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
             ),
           ),
         ],

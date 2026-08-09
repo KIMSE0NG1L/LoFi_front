@@ -159,6 +159,10 @@ class ChatThread {
   final String? lostItemId;
   final String? lostItemOwnerId;
   final String? lostItemStatus;
+  final String? foundItemId;
+  final String? foundItemStatus;
+  final String? foundItemFinderId;
+  final String? userAId;
 
   const ChatThread({
     required this.id,
@@ -175,6 +179,10 @@ class ChatThread {
     this.lostItemId,
     this.lostItemOwnerId,
     this.lostItemStatus,
+    this.foundItemId,
+    this.foundItemStatus,
+    this.foundItemFinderId,
+    this.userAId,
   });
 }
 
