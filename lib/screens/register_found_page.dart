@@ -118,7 +118,7 @@ class _RegisterFoundPageState extends State<RegisterFoundPage> {
       await context.read<AuthProvider>().refreshProfile();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('습득물이 등록되었습니다. (+50pts)')));
+      ).showSnackBar(const SnackBar(content: Text('습득물이 등록되었습니다. 주인을 찾아주면 포인트를 받아요!')));
       if (context.canPop()) { context.pop(); } else { context.go('/'); }
     } catch (e) {
       if (!mounted) return;

@@ -48,7 +48,7 @@ class ActivityService {
           description: item['location'] as String? ?? '',
           icon: 'inventory',
           location: item['location'] as String?,
-          pointsDelta: 50,
+          pointsDelta: null,
           createdAt: DateTime.tryParse(item['created_at'] as String? ?? '') ?? DateTime.now(),
         );
       }),
