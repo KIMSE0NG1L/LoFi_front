@@ -60,6 +60,16 @@ class AuthService {
     await supabase.auth.signOut();
   }
 
+  /// 서버의 delete_user RPC(security definer)로 본인 계정과 데이터를
+  /// 실제로 삭제한다. 삭제 후에는 세션도 즉시 정리한다.
+  Future<void> deleteAccount() async {
+    try {
+      await supabase.rpc('delete_user');
+    } finally {
+      await supabase.auth.signOut();
+    }
+  }
+
   /// 소셜로그인 — 외부 브라우저에서 진행되고, 완료되면 딥링크로 앱에 돌아와
   /// onAuthStateChange 스트림으로 세션이 통지된다 (여기서 완료를 기다리지 않음).
   Future<void> signInWithOAuth(OAuthProvider provider, {String? scopes}) async {

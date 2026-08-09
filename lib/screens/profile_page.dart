@@ -41,21 +41,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _activityError;
   int? _myRank;
 
-  static const _termsContent = '''제1조 (목적)
-이 약관은 옛다 띱! 서비스의 이용에 관한 조건 및 절차, 권리와 의무를 규정합니다.
-
-제2조 (서비스 이용)
-서비스는 분실물 매칭 플랫폼으로, 습득물 등록 및 퀴즈 기반 인증을 제공합니다.
-
-제3조 (퀴즈 시스템)
-습득자는 분실물 특징으로 퀴즈를 출제하며, 분실자가 정답을 맞추면 매칭이 완료됩니다.
-
-제4조 (포인트 시스템)
-습득물 등록 시 10pts, 매칭 성공 시 50pts, 일일 접속 시 5pts가 지급됩니다.
-
-제5조 (금지 행위)
-허위 정보 등록, 타인 분실물 부정 청구, 시스템 악용을 금지합니다.''';
-
   @override
   void initState() {
     super.initState();
@@ -952,10 +937,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             _settingRow(
                               icon: Icons.description_outlined,
                               label: '서비스 이용약관',
-                              onTap: () => _showPolicyModal(
-                                '서비스 이용약관',
-                                _termsContent,
-                              ),
+                              onTap: openTermsOfService,
                             ),
                             Divider(
                               height: 1,
@@ -1550,74 +1532,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   size: 18,
                 ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showPolicyModal(String title, String content) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) => SizedBox(
-        height: MediaQuery.of(sheetContext).size.height * 0.75,
-        child: GlassContainer(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(sheetContext).pop(),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Divider(height: 1, color: Colors.black.withOpacity(0.06)),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    content,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 14,
-                      height: 1.6,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: MediaQuery.of(sheetContext).padding.bottom + 20),
-            ],
-          ),
         ),
       ),
     );

@@ -37,8 +37,16 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     context.canPop() ? context.pop() : context.go('/');
   }
 
-  void _deleteAccount() {
-    context.read<AuthProvider>().deleteAccount();
+  Future<void> _deleteAccount() async {
+    setState(() => _showDeleteConfirm = false);
+    try {
+      await context.read<AuthProvider>().deleteAccount();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('계정 삭제에 실패했습니다: $e')));
+      return;
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('계정이 삭제되었습니다')));
     context.go('/');
   }
