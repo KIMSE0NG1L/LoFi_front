@@ -1,4 +1,4 @@
-package com.lofi.lofi_frontend
+package com.guhaejo.app
 
 import io.flutter.embedding.android.FlutterActivity
 
