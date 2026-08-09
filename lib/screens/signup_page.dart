@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../config/legal_links.dart';
 import '../providers/auth_provider.dart';
 
 class SignupPage extends StatefulWidget {
@@ -108,7 +109,12 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 12),
                   _checkRow('서비스 이용약관 동의 (필수)', _agreeTerms, (v) => setState(() => _agreeTerms = v!)),
                   const SizedBox(height: 8),
-                  _checkRow('개인정보 처리방침 동의 (필수)', _agreePrivacy, (v) => setState(() => _agreePrivacy = v!)),
+                  _checkRow(
+                    '개인정보 처리방침 동의 (필수)',
+                    _agreePrivacy,
+                    (v) => setState(() => _agreePrivacy = v!),
+                    onView: openPrivacyPolicy,
+                  ),
                 ],
               ),
             ),
@@ -235,7 +241,7 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget _checkRow(String label, bool value, ValueChanged<bool?> onChanged) {
+  Widget _checkRow(String label, bool value, ValueChanged<bool?> onChanged, {VoidCallback? onView}) {
     return Row(
       children: [
         Checkbox(
@@ -245,6 +251,19 @@ class _SignupPageState extends State<SignupPage> {
           activeColor: AppColors.primary,
         ),
         Expanded(child: Text(label, style: const TextStyle(color: AppColors.textDark, fontSize: 13))),
+        if (onView != null)
+          GestureDetector(
+            onTap: onView,
+            child: const Text(
+              '보기',
+              style: TextStyle(
+                color: AppColors.interactive,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../config/legal_links.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/activity_service.dart';
@@ -54,23 +55,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
 제5조 (금지 행위)
 허위 정보 등록, 타인 분실물 부정 청구, 시스템 악용을 금지합니다.''';
-
-  static const _privacyContent = '''수집하는 개인정보
-- 이름, 이메일 주소, 전화번호 (회원가입 시)
-- 분실물 및 습득물 정보
-- 서비스 이용 기록
-
-개인정보 이용 목적
-- 분실물 매칭 서비스 제공
-- 포인트/랭킹 시스템 운영
-- 서비스 개선
-- 매칭 성공 시 분실자-습득자 간 연락
-
-보유 및 이용 기간
-회원 탈퇴 시까지 보유하며, 법령에서 정한 경우 해당 기간 동안 보관합니다.
-
-제3자 제공
-매칭 성공 시 분실자와 습득자 간 연락처 정보(전화번호 포함)를 상호 제공합니다.''';
 
   @override
   void initState() {
@@ -980,10 +964,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             _settingRow(
                               icon: Icons.shield_outlined,
                               label: '개인정보 처리방침',
-                              onTap: () => _showPolicyModal(
-                                '개인정보 처리방침',
-                                _privacyContent,
-                              ),
+                              onTap: openPrivacyPolicy,
                             ),
                             Divider(
                               height: 1,
